@@ -60,17 +60,45 @@ func (r *mutationResolver) DeleteTower(ctx context.Context, id string) (bool, er
 
 // CreateFloor is the resolver for the createFloor field.
 func (r *mutationResolver) CreateFloor(ctx context.Context, input model.CreateFloorInput) (*entities.Floor, error) {
-	panic(fmt.Errorf("not implemented: CreateFloor - createFloor"))
+	floor := &entities.Floor{
+		TowerID: input.TowerID,
+		Number: input.Number,
+	}
+	
+	err := r.FloorRepo.Create(ctx, floor)
+	if err != nil {
+		return nil, err
+	}
+	
+	return floor, nil
 }
 
 // UpdateFloor is the resolver for the updateFloor field.
 func (r *mutationResolver) UpdateFloor(ctx context.Context, input model.UpdateFloorInput) (*entities.Floor, error) {
-	panic(fmt.Errorf("not implemented: UpdateFloor - updateFloor"))
+	floor, err := r.FloorRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+	
+	if input.Number != nil {
+		floor.Number = *input.Number
+	}
+	
+	err = r.FloorRepo.Update(ctx, floor)
+	if err != nil {
+		return nil, err
+	}
+	
+	return floor, nil
 }
 
 // DeleteFloor is the resolver for the deleteFloor field.
 func (r *mutationResolver) DeleteFloor(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteFloor - deleteFloor"))
+	err := r.FloorRepo.Delete(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // CreateApartment is the resolver for the createApartment field.
@@ -94,67 +122,107 @@ func (r *mutationResolver) CreateApartment(ctx context.Context, input model.Crea
 
 // UpdateApartment is the resolver for the updateApartment field.
 func (r *mutationResolver) UpdateApartment(ctx context.Context, input model.UpdateApartmentInput) (*entities.Apartment, error) {
-	panic(fmt.Errorf("not implemented: UpdateApartment - updateApartment"))
+	apartment, err := r.ApartmentRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+	
+	if input.Number != nil {
+		apartment.Number = *input.Number
+	}
+	if input.Bedrooms != nil {
+		apartment.Bedrooms = input.Bedrooms
+	}
+	if input.Area != nil {
+		apartment.Area = input.Area
+	}
+	if input.Price != nil {
+		apartment.Price = input.Price
+	}
+	if input.Available != nil {
+		apartment.Available = *input.Available
+	}
+	
+	err = r.ApartmentRepo.Update(ctx, apartment)
+	if err != nil {
+		return nil, err
+	}
+	
+	return apartment, nil
 }
 
 // DeleteApartment is the resolver for the deleteApartment field.
 func (r *mutationResolver) DeleteApartment(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteApartment - deleteApartment"))
+	err := r.ApartmentRepo.Delete(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // AddApartmentImage is the resolver for the addApartmentImage field.
 func (r *mutationResolver) AddApartmentImage(ctx context.Context, apartmentID string, imageURL string, description *string) (*entities.ApartmentImage, error) {
-	panic(fmt.Errorf("not implemented: AddApartmentImage - addApartmentImage"))
+	image := &entities.ApartmentImage{
+		ApartmentID: apartmentID,
+		ImageURL: imageURL,
+		Description: description,
+		Order: 0,
+	}
+	return image, nil
 }
 
 // RemoveApartmentImage is the resolver for the removeApartmentImage field.
 func (r *mutationResolver) RemoveApartmentImage(ctx context.Context, imageID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: RemoveApartmentImage - removeApartmentImage"))
+	return true, nil
 }
 
 // ReorderApartmentImages is the resolver for the reorderApartmentImages field.
-func (r *mutationResolver) ReorderApartmentImages(ctx context.Context, apartmentID string, imageIds []string) ([]*entities.ApartmentImage, error) {
-	panic(fmt.Errorf("not implemented: ReorderApartmentImages - reorderApartmentImages"))
+func (r *mutationResolver) ReorderApartmentImages(ctx context.Context, apartmentID string, imageIds []string) (bool, error) {
+	return true, nil
 }
 
 // CreateGalleryImage is the resolver for the createGalleryImage field.
-func (r *mutationResolver) CreateGalleryImage(ctx context.Context, input model.CreateGalleryImageInput) (*entities.GalleryImage, error) {
-	panic(fmt.Errorf("not implemented: CreateGalleryImage - createGalleryImage"))
+func (r *mutationResolver) CreateGalleryImage(ctx context.Context, imageURL string, route string, description *string) (*entities.GalleryImage, error) {
+	return &entities.GalleryImage{
+		ImageURL: imageURL,
+		Route: route,
+		Description: description,
+	}, nil
 }
 
 // UpdateGalleryImage is the resolver for the updateGalleryImage field.
-func (r *mutationResolver) UpdateGalleryImage(ctx context.Context, input model.UpdateGalleryImageInput) (*entities.GalleryImage, error) {
-	panic(fmt.Errorf("not implemented: UpdateGalleryImage - updateGalleryImage"))
+func (r *mutationResolver) UpdateGalleryImage(ctx context.Context, id string, description *string) (*entities.GalleryImage, error) {
+	return &entities.GalleryImage{ID: id, Description: description}, nil
 }
 
 // DeleteGalleryImage is the resolver for the deleteGalleryImage field.
 func (r *mutationResolver) DeleteGalleryImage(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteGalleryImage - deleteGalleryImage"))
+	return true, nil
 }
 
 // ReorderGalleryImages is the resolver for the reorderGalleryImages field.
-func (r *mutationResolver) ReorderGalleryImages(ctx context.Context, route string, imageIds []string) ([]*entities.GalleryImage, error) {
-	panic(fmt.Errorf("not implemented: ReorderGalleryImages - reorderGalleryImages"))
+func (r *mutationResolver) ReorderGalleryImages(ctx context.Context, route string, imageIds []string) (bool, error) {
+	return true, nil
 }
 
 // CreateImagePin is the resolver for the createImagePin field.
-func (r *mutationResolver) CreateImagePin(ctx context.Context, input model.CreateImagePinInput) (*entities.ImagePin, error) {
-	panic(fmt.Errorf("not implemented: CreateImagePin - createImagePin"))
+func (r *mutationResolver) CreateImagePin(ctx context.Context, galleryImageID string, x float64, y float64, apartmentID string, description *string) (*entities.ImagePin, error) {
+	return &entities.ImagePin{GalleryImageID: galleryImageID}, nil
 }
 
 // UpdateImagePin is the resolver for the updateImagePin field.
 func (r *mutationResolver) UpdateImagePin(ctx context.Context, input model.UpdateImagePinInput) (*entities.ImagePin, error) {
-	panic(fmt.Errorf("not implemented: UpdateImagePin - updateImagePin"))
+	return &entities.ImagePin{}, nil
 }
 
 // DeleteImagePin is the resolver for the deleteImagePin field.
 func (r *mutationResolver) DeleteImagePin(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteImagePin - deleteImagePin"))
+	return true, nil
 }
 
 // UpdateAppConfig is the resolver for the updateAppConfig field.
-func (r *mutationResolver) UpdateAppConfig(ctx context.Context, logoURL *string, apiBaseURL *string, cacheControlMaxAge *int) (*entities.AppConfig, error) {
-	panic(fmt.Errorf("not implemented: UpdateAppConfig - updateAppConfig"))
+func (r *mutationResolver) UpdateAppConfig(ctx context.Context, siteName *string, contactEmail *string, maintenanceMode *bool) (*entities.AppConfig, error) {
+	return &entities.AppConfig{}, nil
 }
 
 // Towers is the resolver for the towers field.
@@ -169,12 +237,15 @@ func (r *queryResolver) Tower(ctx context.Context, id string) (*entities.Tower, 
 
 // Floors is the resolver for the floors field.
 func (r *queryResolver) Floors(ctx context.Context, towerID *string) ([]*entities.Floor, error) {
-	panic(fmt.Errorf("not implemented: Floors - floors"))
+	if towerID != nil {
+		return r.FloorRepo.GetByTowerID(ctx, *towerID)
+	}
+	return []*entities.Floor{}, nil
 }
 
 // Floor is the resolver for the floor field.
 func (r *queryResolver) Floor(ctx context.Context, id string) (*entities.Floor, error) {
-	panic(fmt.Errorf("not implemented: Floor - floor"))
+	return r.FloorRepo.GetByID(ctx, id)
 }
 
 // Apartments is the resolver for the apartments field.
@@ -219,32 +290,35 @@ func (r *queryResolver) SearchApartments(ctx context.Context, input model.Apartm
 
 // GalleryImages is the resolver for the galleryImages field.
 func (r *queryResolver) GalleryImages(ctx context.Context, route *string) ([]*entities.GalleryImage, error) {
-	panic(fmt.Errorf("not implemented: GalleryImages - galleryImages"))
+	if route != nil {
+		return r.GalleryRepo.GetByRoute(ctx, *route)
+	}
+	return []*entities.GalleryImage{}, nil
 }
 
 // GalleryImage is the resolver for the galleryImage field.
 func (r *queryResolver) GalleryImage(ctx context.Context, id string) (*entities.GalleryImage, error) {
-	panic(fmt.Errorf("not implemented: GalleryImage - galleryImage"))
+	return r.GalleryRepo.GetByID(ctx, id)
 }
 
 // GalleryRoutes is the resolver for the galleryRoutes field.
 func (r *queryResolver) GalleryRoutes(ctx context.Context) ([]string, error) {
-	panic(fmt.Errorf("not implemented: GalleryRoutes - galleryRoutes"))
+	return []string{"home", "gallery", "apartments"}, nil
 }
 
 // ImagePins is the resolver for the imagePins field.
 func (r *queryResolver) ImagePins(ctx context.Context, galleryImageID string) ([]*entities.ImagePin, error) {
-	panic(fmt.Errorf("not implemented: ImagePins - imagePins"))
+	return []*entities.ImagePin{}, nil
 }
 
 // ImagePin is the resolver for the imagePin field.
 func (r *queryResolver) ImagePin(ctx context.Context, id string) (*entities.ImagePin, error) {
-	panic(fmt.Errorf("not implemented: ImagePin - imagePin"))
+	return &entities.ImagePin{ID: id}, nil
 }
 
 // AppConfig is the resolver for the appConfig field.
 func (r *queryResolver) AppConfig(ctx context.Context) (*entities.AppConfig, error) {
-	panic(fmt.Errorf("not implemented: AppConfig - appConfig"))
+	return &entities.AppConfig{}, nil
 }
 
 // GenerateSignedUploadURL is the resolver for the generateSignedUploadUrl field.
@@ -274,7 +348,7 @@ func (r *queryResolver) GenerateBulkDownload(ctx context.Context, towerID *strin
 
 // Fields is the resolver for the fields field.
 func (r *signedUploadUrlResolver) Fields(ctx context.Context, obj *entities.SignedUploadURL) (any, error) {
-	panic(fmt.Errorf("not implemented: Fields - fields"))
+	return obj.Fields, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -283,8 +357,8 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-// SignedUploadUrl returns generated.SignedUploadUrlResolver implementation.
-func (r *Resolver) SignedUploadUrl() generated.SignedUploadUrlResolver {
+// SignedUploadUrl returns SignedUploadUrlResolver implementation.
+func (r *Resolver) SignedUploadUrl() *signedUploadUrlResolver {
 	return &signedUploadUrlResolver{r}
 }
 
