@@ -211,8 +211,12 @@ func (r *mutationResolver) CreateImagePin(ctx context.Context, galleryImageID st
 }
 
 // UpdateImagePin is the resolver for the updateImagePin field.
-func (r *mutationResolver) UpdateImagePin(ctx context.Context, input model.UpdateImagePinInput) (*entities.ImagePin, error) {
-	return &entities.ImagePin{}, nil
+func (r *mutationResolver) UpdateImagePin(ctx context.Context, id string, x *float64, y *float64, description *string) (*entities.ImagePin, error) {
+	pin := &entities.ImagePin{
+		ID: id,
+		Description: description,
+	}
+	return pin, nil
 }
 
 // DeleteImagePin is the resolver for the deleteImagePin field.
