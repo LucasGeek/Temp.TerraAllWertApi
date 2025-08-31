@@ -18,23 +18,29 @@ Sistema de gerenciamento de torres residenciais e comerciais com foco em vendas 
 
 ## Estrutura do Projeto
 
+**OBRIGATÓRIO: Separação src/test com go.work**
+
+O projeto deve sempre ser separado em dois módulos Go usando go.work:
+- `./src/`: Código da aplicação principal
+- `./test/`: Todos os testes (unit, integration, e2e)
+
 ```
 api/
-├── cmd/              # Comandos da aplicação
-├── internal/         # Código privado da aplicação
-│   ├── config/       # Configurações
-│   ├── database/     # Conexão e migrações
-│   ├── graph/        # GraphQL resolvers
-│   ├── handlers/     # HTTP handlers
-│   ├── middleware/   # Middlewares
-│   ├── models/       # Modelos de dados
-│   ├── repositories/ # Camada de acesso a dados
-│   ├── services/     # Lógica de negócio
-│   └── storage/      # Integração com MinIO
-├── migrations/       # Migrações do banco
-├── pkg/              # Código público/reutilizável
-├── scripts/          # Scripts auxiliares
-└── docker/           # Configurações Docker
+├── go.work           # Workspace Go (src + test)
+├── src/              # Módulo principal da aplicação
+│   ├── go.mod        # Dependências da aplicação
+│   ├── main.go       # Entry point
+│   ├── api/handlers/ # HTTP handlers (ÚNICA pasta para handlers)
+│   ├── domain/       # Entidades e interfaces
+│   ├── data/         # Repositórios e implementações
+│   ├── infra/        # Infraestrutura (auth, middleware, storage)
+│   └── docker/       # Configurações Docker
+└── test/             # Módulo de testes
+    ├── go.mod        # Dependências de teste
+    ├── unit/         # Testes unitários
+    ├── integration/  # Testes de integração
+    ├── e2e/          # Testes end-to-end
+    └── fixtures/     # Fixtures e mocks
 ```
 
 ## Funcionalidades Principais

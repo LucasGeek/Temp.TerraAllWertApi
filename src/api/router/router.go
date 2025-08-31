@@ -1,7 +1,7 @@
 package router
 
 import (
-	"api/api/handler"
+	"api/api/handlers"
 	"api/infra/config"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,9 +9,9 @@ import (
 
 func SetupRoutes(
 	app *fiber.App,
-	userHandler *handler.UserHandler,
-	healthHandler *handler.HealthHandler,
-	adminHandler *handler.AdminHandler,
+	userHandler *handlers.UserHandler,
+	healthHandler *handlers.HealthHandler,
+	adminHandler *handlers.AdminHandler,
 	cfg *config.Config,
 ) {
 	// Health check

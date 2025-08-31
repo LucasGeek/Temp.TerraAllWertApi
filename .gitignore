@@ -35,6 +35,9 @@ bin/
 dist/
 build/
 
+# Terra Allwert binary
+terra-allwert
+
 # Logs
 *.log
 logs/

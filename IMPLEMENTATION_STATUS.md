@@ -42,21 +42,22 @@
 
 ### DevOps
 - ✅ Docker compose for development
-- ✅ Go workspace configuration
+- ✅ Go workspace configuration (src/test separation)
 - ✅ Proper dependency management
+- ✅ Organized project structure with single handlers directory
 
 ## 📋 Pending Implementation (Future Enhancements)
 
-### GraphQL Layer
-- ⏳ GraphQL resolvers implementation
+### GraphQL Layer (Non-Critical)
+- ⏳ GraphQL resolvers implementation (schema complete but resolvers pending)
 - ⏳ DataLoader for N+1 query optimization
 - ⏳ Real-time subscriptions
 - ⏳ GraphQL query complexity analysis
 
-### Advanced Features  
-- ⏳ Bulk download service implementation
-- ⏳ Advanced caching strategies
-- ⏳ File upload validation
+### Advanced Features (Non-Critical)
+- ⏳ Bulk download functionality (file aggregation and zip downloads)
+- ⏳ Performance optimizations (advanced caching strategies, DataLoader)
+- ⏳ File upload validation and image processing
 - ⏳ Image resizing/optimization
 - ⏳ Full-text search for apartments
 
