@@ -52,31 +52,25 @@
 - ✅ GraphQL schema definition (complete)
 - ⏳ GraphQL resolvers implementation (schema complete but resolvers pending)
 - ⏳ DataLoader for N+1 query optimization
-- ⏳ Real-time subscriptions with WebSocket
 - ⏳ GraphQL query complexity analysis and rate limiting
 - ⏳ GraphQL playground setup for development
 
 ### Advanced Features (Non-Critical)
-- ⏳ Bulk download functionality (file aggregation and zip downloads)
+- ✅ Bulk download functionality (file aggregation and zip downloads)
 - ⏳ Advanced caching strategies (Redis with TTL optimization)
 - ⏳ Performance optimizations (DataLoader, query batching)
-- ⏳ File upload validation and virus scanning
-- ⏳ Image processing (resizing, compression, watermarks)
-- ⏳ Full-text search for apartments (Elasticsearch integration)
-- ⏳ Export functionality (PDF reports, Excel spreadsheets)
-- ⏳ Automated backups and data retention policies
+- ⏳ Full-text search for apartments (opensearch integration)
+- ⏳ Images and videos must be uploaded from the frontend to minio directly, but the api must manage the signed url
 
 ### Security Enhancements (Non-Critical)
-- ⏳ Rate limiting per user/endpoint
+- ✅ Rate limiting per user/endpoint
 - ⏳ API key management system
 - ⏳ Audit logging for admin actions
-- ⏳ Two-factor authentication (2FA)
-- ⏳ OAuth2 integration (Google, Facebook login)
 - ⏳ CORS configuration refinement
 - ⏳ Security headers middleware
 
 ### Monitoring & Observability (Non-Critical)
-- ⏳ Structured logging with correlation IDs
+- ✅ Structured logging with correlation IDs
 - ⏳ Metrics collection (Prometheus/Grafana)
 - ⏳ Distributed tracing (Jaeger/OpenTelemetry)
 - ⏳ Health check improvements (dependency checks)
@@ -84,21 +78,10 @@
 - ⏳ Error tracking (Sentry integration)
 - ⏳ Application performance monitoring (APM)
 
-### DevOps & Infrastructure (Non-Critical)
-- ⏳ CI/CD pipeline setup (GitHub Actions)
-- ⏳ Kubernetes deployment manifests
-- ⏳ Database connection pooling optimization
-- ⏳ Load balancing configuration
-- ⏳ SSL/TLS certificate automation
-- ⏳ Environment-specific configurations
-- ⏳ Backup and disaster recovery procedures
-
 ### API Documentation (Non-Critical)
-- ⏳ OpenAPI/Swagger documentation
+- ✅ OpenAPI/Swagger documentation
 - ⏳ API versioning strategy
-- ⏳ Interactive API documentation
-- ⏳ SDK generation for client libraries
-- ⏳ Postman collection maintenance
+- ✅ Interactive API documentation setup
 
 ## 🚀 Ready for Production
 
