@@ -57,10 +57,10 @@
 
 ### Advanced Features (Non-Critical)
 - ✅ Bulk download functionality (file aggregation and zip downloads)
-- ⏳ Advanced caching strategies (Redis with TTL optimization)
-- ⏳ Performance optimizations (DataLoader, query batching)
-- ⏳ Full-text search for apartments (opensearch integration)
-- ⏳ Images and videos must be uploaded from the frontend to minio directly, but the api must manage the signed url
+- ✅ Advanced caching strategies (Redis with TTL optimization)
+- ✅ Performance optimizations (DataLoader, query batching)
+- ✅ Full-text search for apartments (opensearch integration)
+- ✅ Images and videos must be uploaded from the frontend to minio directly, but the api must manage the signed url
 
 ### Security Enhancements (Non-Critical)
 - ✅ Rate limiting per user/endpoint

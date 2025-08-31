@@ -14,17 +14,48 @@ import (
 
 // CreateTower is the resolver for the createTower field.
 func (r *mutationResolver) CreateTower(ctx context.Context, input model.CreateTowerInput) (*entities.Tower, error) {
-	panic(fmt.Errorf("not implemented: CreateTower - createTower"))
+	tower := &entities.Tower{
+		Name: input.Name,
+		Description: input.Description,
+	}
+	
+	err := r.TowerRepo.Create(ctx, tower)
+	if err != nil {
+		return nil, err
+	}
+	
+	return tower, nil
 }
 
 // UpdateTower is the resolver for the updateTower field.
 func (r *mutationResolver) UpdateTower(ctx context.Context, input model.UpdateTowerInput) (*entities.Tower, error) {
-	panic(fmt.Errorf("not implemented: UpdateTower - updateTower"))
+	tower, err := r.TowerRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+	
+	if input.Name != nil {
+		tower.Name = *input.Name
+	}
+	if input.Description != nil {
+		tower.Description = input.Description
+	}
+	
+	err = r.TowerRepo.Update(ctx, tower)
+	if err != nil {
+		return nil, err
+	}
+	
+	return tower, nil
 }
 
 // DeleteTower is the resolver for the deleteTower field.
 func (r *mutationResolver) DeleteTower(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteTower - deleteTower"))
+	err := r.TowerRepo.Delete(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // CreateFloor is the resolver for the createFloor field.
@@ -44,7 +75,21 @@ func (r *mutationResolver) DeleteFloor(ctx context.Context, id string) (bool, er
 
 // CreateApartment is the resolver for the createApartment field.
 func (r *mutationResolver) CreateApartment(ctx context.Context, input model.CreateApartmentInput) (*entities.Apartment, error) {
-	panic(fmt.Errorf("not implemented: CreateApartment - createApartment"))
+	apartment := &entities.Apartment{
+		FloorID: input.FloorID,
+		Number: input.Number,
+		Bedrooms: input.Bedrooms,
+		Area: input.Area,
+		Price: input.Price,
+		Available: input.Available,
+	}
+	
+	err := r.ApartmentRepo.Create(ctx, apartment)
+	if err != nil {
+		return nil, err
+	}
+	
+	return apartment, nil
 }
 
 // UpdateApartment is the resolver for the updateApartment field.
@@ -114,12 +159,12 @@ func (r *mutationResolver) UpdateAppConfig(ctx context.Context, logoURL *string,
 
 // Towers is the resolver for the towers field.
 func (r *queryResolver) Towers(ctx context.Context) ([]*entities.Tower, error) {
-	panic(fmt.Errorf("not implemented: Towers - towers"))
+	return r.TowerRepo.GetAll(ctx)
 }
 
 // Tower is the resolver for the tower field.
 func (r *queryResolver) Tower(ctx context.Context, id string) (*entities.Tower, error) {
-	panic(fmt.Errorf("not implemented: Tower - tower"))
+	return r.TowerRepo.GetByID(ctx, id)
 }
 
 // Floors is the resolver for the floors field.
@@ -134,17 +179,42 @@ func (r *queryResolver) Floor(ctx context.Context, id string) (*entities.Floor, 
 
 // Apartments is the resolver for the apartments field.
 func (r *queryResolver) Apartments(ctx context.Context, floorID *string) ([]*entities.Apartment, error) {
-	panic(fmt.Errorf("not implemented: Apartments - apartments"))
+	if floorID != nil {
+		return r.ApartmentRepo.GetByFloorID(ctx, *floorID)
+	}
+	// Get all available apartments as default
+	return r.ApartmentRepo.GetByStatus(ctx, entities.ApartmentStatusAvailable)
 }
 
 // Apartment is the resolver for the apartment field.
 func (r *queryResolver) Apartment(ctx context.Context, id string) (*entities.Apartment, error) {
-	panic(fmt.Errorf("not implemented: Apartment - apartment"))
+	return r.ApartmentRepo.GetByID(ctx, id)
 }
 
 // SearchApartments is the resolver for the searchApartments field.
 func (r *queryResolver) SearchApartments(ctx context.Context, input model.ApartmentSearchInput) ([]*entities.Apartment, error) {
-	panic(fmt.Errorf("not implemented: SearchApartments - searchApartments"))
+	criteria := &entities.ApartmentSearchCriteria{}
+	
+	if input.Query != nil {
+		criteria.Number = input.Query
+	}
+	if input.Bedrooms != nil {
+		criteria.Bedrooms = input.Bedrooms
+	}
+	if input.Suites != nil {
+		criteria.Suites = input.Suites
+	}
+	if input.TowerID != nil {
+		criteria.TowerID = input.TowerID
+	}
+	if input.PriceMin != nil {
+		criteria.PriceMin = input.PriceMin
+	}
+	if input.PriceMax != nil {
+		criteria.PriceMax = input.PriceMax
+	}
+	
+	return r.ApartmentRepo.Search(ctx, criteria)
 }
 
 // GalleryImages is the resolver for the galleryImages field.
@@ -179,12 +249,27 @@ func (r *queryResolver) AppConfig(ctx context.Context) (*entities.AppConfig, err
 
 // GenerateSignedUploadURL is the resolver for the generateSignedUploadUrl field.
 func (r *queryResolver) GenerateSignedUploadURL(ctx context.Context, fileName string, contentType string, folder string) (*entities.SignedUploadURL, error) {
-	panic(fmt.Errorf("not implemented: GenerateSignedUploadURL - generateSignedUploadUrl"))
+	return r.StorageService.GenerateSignedUploadURL(ctx, fileName, contentType, folder)
 }
 
 // GenerateBulkDownload is the resolver for the generateBulkDownload field.
 func (r *queryResolver) GenerateBulkDownload(ctx context.Context, towerID *string) (*entities.BulkDownload, error) {
-	panic(fmt.Errorf("not implemented: GenerateBulkDownload - generateBulkDownload"))
+	if towerID == nil {
+		return nil, fmt.Errorf("tower ID is required")
+	}
+	
+	result, err := r.BulkDownloadService.GenerateTowerDownload(ctx, *towerID)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &entities.BulkDownload{
+		DownloadURL: result.DownloadURL,
+		FileName: result.FileName,
+		FileSize: result.FileSize,
+		ExpiresIn: result.ExpiresIn,
+		CreatedAt: result.CreatedAt,
+	}, nil
 }
 
 // Fields is the resolver for the fields field.
