@@ -1,0 +1,236 @@
+type Query {
+  # User queries
+  me: User!
+  user(id: ID!): User
+  users(limit: Int = 10, offset: Int = 0): [User!]!
+  
+  # Tower queries
+  tower(id: ID!): Tower
+  towers(limit: Int = 10, offset: Int = 0): [Tower!]!
+  
+  # Floor queries
+  floor(id: ID!): Floor
+  floors(towerId: ID!, limit: Int = 10, offset: Int = 0): [Floor!]!
+  
+  # Apartment queries
+  apartment(id: ID!): Apartment
+  apartments(floorId: ID!, limit: Int = 10, offset: Int = 0): [Apartment!]!
+}
+
+type Mutation {
+  # Auth mutations
+  login(input: LoginInput!): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+  refreshToken(token: String!): AuthPayload!
+  logout: Boolean!
+  
+  # User mutations
+  updateProfile(input: UpdateProfileInput!): User!
+  changePassword(input: ChangePasswordInput!): User!
+  
+  # Tower mutations
+  createTower(input: CreateTowerInput!): Tower!
+  updateTower(id: ID!, input: UpdateTowerInput!): Tower!
+  deleteTower(id: ID!): Boolean!
+  
+  # Floor mutations
+  createFloor(input: CreateFloorInput!): Floor!
+  updateFloor(id: ID!, input: UpdateFloorInput!): Floor!
+  deleteFloor(id: ID!): Boolean!
+  
+  # Apartment mutations
+  createApartment(input: CreateApartmentInput!): Apartment!
+  updateApartment(id: ID!, input: UpdateApartmentInput!): Apartment!
+  deleteApartment(id: ID!): Boolean!
+}
+
+type Subscription {
+  towerUpdated(id: ID!): Tower!
+  apartmentUpdated(id: ID!): Apartment!
+}
+
+# User types
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  role: UserRole!
+  avatar: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum UserRole {
+  ADMIN
+  CONSULTANT
+  CLIENT
+}
+
+# Tower types
+type Tower {
+  id: ID!
+  name: String!
+  description: String
+  address: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  totalFloors: Int!
+  totalApartments: Int!
+  images: [Image!]!
+  floors: [Floor!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Floor types
+type Floor {
+  id: ID!
+  towerId: ID!
+  tower: Tower!
+  number: Int!
+  name: String!
+  totalApartments: Int!
+  floorPlan: String
+  apartments: [Apartment!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Apartment types
+type Apartment {
+  id: ID!
+  floorId: ID!
+  floor: Floor!
+  number: String!
+  type: ApartmentType!
+  area: Float!
+  bedrooms: Int!
+  bathrooms: Int!
+  price: Float!
+  status: ApartmentStatus!
+  features: [String!]!
+  images: [Image!]!
+  videos: [Video!]!
+  virtualTour: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum ApartmentType {
+  STUDIO
+  ONE_BEDROOM
+  TWO_BEDROOM
+  THREE_BEDROOM
+  PENTHOUSE
+}
+
+enum ApartmentStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  UNAVAILABLE
+}
+
+# Media types
+type Image {
+  id: ID!
+  url: String!
+  thumbnail: String!
+  caption: String
+  order: Int!
+}
+
+type Video {
+  id: ID!
+  url: String!
+  thumbnail: String!
+  title: String!
+  duration: Int!
+}
+
+# Auth types
+type AuthPayload {
+  token: String!
+  refreshToken: String!
+  user: User!
+}
+
+# Input types
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  name: String!
+  role: UserRole
+}
+
+input UpdateProfileInput {
+  name: String
+  avatar: String
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+input CreateTowerInput {
+  name: String!
+  description: String
+  address: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  totalFloors: Int!
+}
+
+input UpdateTowerInput {
+  name: String
+  description: String
+  address: String
+  city: String
+  state: String
+  zipCode: String
+}
+
+input CreateFloorInput {
+  towerId: ID!
+  number: Int!
+  name: String!
+  floorPlan: String
+}
+
+input UpdateFloorInput {
+  name: String
+  floorPlan: String
+}
+
+input CreateApartmentInput {
+  floorId: ID!
+  number: String!
+  type: ApartmentType!
+  area: Float!
+  bedrooms: Int!
+  bathrooms: Int!
+  price: Float!
+  status: ApartmentStatus!
+  features: [String!]
+  virtualTour: String
+}
+
+input UpdateApartmentInput {
+  number: String
+  type: ApartmentType
+  area: Float
+  bedrooms: Int
+  bathrooms: Int
+  price: Float
+  status: ApartmentStatus
+  features: [String!]
+  virtualTour: String
+}

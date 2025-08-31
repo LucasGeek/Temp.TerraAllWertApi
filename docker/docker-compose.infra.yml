@@ -1,0 +1,86 @@
+# =============================================================================
+# DOCKER COMPOSE - APENAS INFRAESTRUTURA
+# =============================================================================
+# Arquivo: docker/docker-compose.infra.yml
+# Propósito: Apenas serviços de infraestrutura (PostgreSQL + Redis + MinIO)
+# 
+# Execução: docker compose -f docker/docker-compose.infra.yml up -d
+# 
+# QUANDO USAR:
+# - Desenvolvimento local onde você roda a aplicação diretamente no host
+# - Testes unitários que precisam de banco, cache, filas ou e-mail
+# - CI/CD que executa testes contra infraestrutura real
+# 
+# VANTAGENS:
+# - Hot reload nativo (se aplicável)
+# - Debugging nativo mais fácil
+# - Menos recursos consumidos
+# - Iteração mais rápida no desenvolvimento
+# =============================================================================
+
+name: terra_allwert
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: api_postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-apiuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-apipass}
+      POSTGRES_DB: ${DB_NAME:-apidb}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - api_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-apiuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: api_redis
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - api_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: api_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minio123}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - api_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  api_network:
+    driver: bridge

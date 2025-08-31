@@ -1,0 +1,66 @@
+# =============================================================================
+# DOCKER COMPOSE - AMBIENTE DE DESENVOLVIMENTO LOCAL
+# =============================================================================
+# Arquivo: docker/docker-compose.dev.yml
+# Propósito: Extende docker-compose.infra.yml e adiciona a aplicação
+# 
+# Execução: docker compose -f docker/docker-compose.infra.yml -f docker/docker-compose.dev.yml up --build
+# 
+# QUANDO USAR:
+# - Desenvolvimento completo da aplicação em container
+# - Validação de integração local
+# - Debug de problemas relacionados ao ambiente Docker
+# 
+# CARACTERÍSTICAS:
+# - Extende os serviços de infraestrutura do docker-compose.infra.yml
+# - Adiciona apenas o serviço da aplicação
+# - Usa mesmas networks, volumes e configurações de infraestrutura
+# - Hot reload habilitado para desenvolvimento rápido
+# =============================================================================
+name: terra_allwert
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: api_app
+    environment:
+      - APP_ENV=${APP_ENV:-development}
+      - APP_PORT=${APP_PORT:-3000}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-apiuser}
+      - DB_PASSWORD=${DB_PASSWORD:-apipass}
+      - DB_NAME=${DB_NAME:-apidb}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ../src:/app/src
+      - ../test:/app/test
+      - ../go.work:/app/go.work
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - api_network
+    command: air -c .air.toml
+
+  postgres:
+    extends:
+      file: docker-compose.infra.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: docker-compose.infra.yml
+      service: redis
+
+networks:
+  api_network:
+    driver: bridge
