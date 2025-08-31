@@ -108,7 +108,7 @@ func createInitialAppConfig(db *gorm.DB) error {
 	}
 
 	config := &entities.AppConfig{
-		APIBaseURL:         "http://localhost:8080",
+		APIBaseURL:         "http://localhost:3000",
 		MinioBaseURL:       "http://localhost:9000",
 		AppVersion:         "1.0.0-dev",
 		CacheControlMaxAge: 3600,
@@ -198,7 +198,7 @@ func createFloorsAndApartments(db *gorm.DB, tower *entities.Tower, towerLetter s
 		// Criar apartamentos para este pavimento
 		for apt := 1; apt <= aptsPerFloor; apt++ {
 			apartmentNumber := fmt.Sprintf("%s%d%02d", towerLetter, floor, apt)
-			
+
 			var status entities.ApartmentStatus
 			var price *float64
 			var available bool
@@ -406,14 +406,14 @@ func GetSeedStats(db *gorm.DB) (map[string]int64, error) {
 	stats := make(map[string]int64)
 
 	entities := map[string]any{
-		"users":           &entities.User{},
-		"towers":          &entities.Tower{},
-		"floors":          &entities.Floor{},
-		"apartments":      &entities.Apartment{},
+		"users":            &entities.User{},
+		"towers":           &entities.Tower{},
+		"floors":           &entities.Floor{},
+		"apartments":       &entities.Apartment{},
 		"apartment_images": &entities.ApartmentImage{},
-		"gallery_images":  &entities.GalleryImage{},
-		"image_pins":      &entities.ImagePin{},
-		"app_config":      &entities.AppConfig{},
+		"gallery_images":   &entities.GalleryImage{},
+		"image_pins":       &entities.ImagePin{},
+		"app_config":       &entities.AppConfig{},
 	}
 
 	for name, model := range entities {

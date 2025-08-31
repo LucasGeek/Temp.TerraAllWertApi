@@ -3,13 +3,14 @@ package middleware
 import (
 	"api/infra/config"
 
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"time"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
 func ErrorHandler(cfg *config.Config) fiber.ErrorHandler {
@@ -38,7 +39,7 @@ func Logger(cfg *config.Config) fiber.Handler {
 
 func CORS(cfg *config.Config) fiber.Handler {
 	return cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000,http://localhost:8080",
+		AllowOrigins:     "http://localhost:3000,http://localhost:3000",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Content-Type,Authorization",
 		AllowCredentials: true,

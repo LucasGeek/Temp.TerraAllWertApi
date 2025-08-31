@@ -43,19 +43,19 @@ type DatabaseConfig struct {
 }
 
 type RedisConfig struct {
-	Host           string
-	Port           string
-	Password       string
-	DB             int
-	PoolSize       int
-	MinIdleConns   int
-	MaxRetries     int
+	Host         string
+	Port         string
+	Password     string
+	DB           int
+	PoolSize     int
+	MinIdleConns int
+	MaxRetries   int
 }
 
 type JWTConfig struct {
-	Secret              string
-	AccessTokenExpiry   time.Duration
-	RefreshTokenExpiry  time.Duration
+	Secret             string
+	AccessTokenExpiry  time.Duration
+	RefreshTokenExpiry time.Duration
 }
 
 type APIConfig struct {
@@ -96,7 +96,7 @@ func LoadConfig() (*Config, error) {
 			Name:            getEnv("APP_NAME", "Terra-Allwert-API"),
 			Version:         getEnv("APP_VERSION", "1.0.0"),
 			Environment:     getEnv("APP_ENV", "development"),
-			Port:            getEnv("APP_PORT", "8080"),
+			Port:            getEnv("APP_PORT", "3000"),
 			Debug:           getEnvBool("APP_DEBUG", true),
 			GracefulTimeout: getEnvDuration("APP_GRACEFUL_TIMEOUT", 30*time.Second),
 		},

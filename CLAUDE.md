@@ -112,7 +112,7 @@ go run github.com/99designs/gqlgen generate
 
 ```env
 # Server
-PORT=8080
+PORT=3000
 ENVIRONMENT=development
 
 # Database

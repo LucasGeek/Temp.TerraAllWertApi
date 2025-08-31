@@ -3,7 +3,7 @@
 # Script de teste para o sistema de autenticação GraphQL
 # Uso: ./test_auth.sh
 
-BASE_URL="http://localhost:8080/graphql"
+BASE_URL="http://localhost:3000/graphql"
 HEADERS="Content-Type: application/json"
 
 echo "🔧 Testando Sistema de Autenticação GraphQL - Terra Allwert API"
@@ -184,4 +184,4 @@ echo "  ADMIN:  admin2@terraallwert.com / admin123"
 echo "  VIEWER: demo@terraallwert.com / demo123"
 echo
 echo "Se todos os testes passaram, o sistema de autenticação está funcionando! 🚀"
-echo "Para usar GraphQL Playground: http://localhost:8080/graphql"
+echo "Para usar GraphQL Playground: http://localhost:3000/graphql"

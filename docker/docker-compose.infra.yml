@@ -23,7 +23,7 @@ name: terra_allwert
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: api_postgres
+    container_name: postgres
     environment:
       POSTGRES_USER: ${DB_USER:-apiuser}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-apipass}
@@ -42,7 +42,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: api_redis
+    container_name: redis
     command: redis-server --appendonly yes
     ports:
       - "${REDIS_PORT:-6379}:6379"
@@ -58,7 +58,7 @@ services:
 
   minio:
     image: quay.io/minio/minio:latest
-    container_name: api_minio
+    container_name: minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio}
