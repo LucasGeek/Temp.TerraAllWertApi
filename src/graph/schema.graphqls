@@ -1,236 +1,311 @@
+# Custom Scalars
+scalar Time
+scalar JSON
+scalar Upload
+
 type Query {
-  # User queries
-  me: User!
-  user(id: ID!): User
-  users(limit: Int = 10, offset: Int = 0): [User!]!
-  
-  # Tower queries
+  # Torres
+  towers: [Tower!]!
   tower(id: ID!): Tower
-  towers(limit: Int = 10, offset: Int = 0): [Tower!]!
   
-  # Floor queries
+  # Pavimentos
+  floors(towerId: ID): [Floor!]!
   floor(id: ID!): Floor
-  floors(towerId: ID!, limit: Int = 10, offset: Int = 0): [Floor!]!
   
-  # Apartment queries
-  apartment(id: ID!): Apartment
-  apartments(floorId: ID!, limit: Int = 10, offset: Int = 0): [Apartment!]!
+  # Apartamentos
+  apartments(floorId: ID): [Apartment!]!               # lista apartamentos de um pavimento
+  apartment(id: ID!): Apartment                        # busca apartamento por ID
+  searchApartments(input: ApartmentSearchInput!): [Apartment!]! # busca apartamentos com filtros
+  
+  # Gallery (Galeria)
+  galleryImages(route: String): [GalleryImage!]!       # lista imagens por rota
+  galleryImage(id: ID!): GalleryImage                  # busca imagem por ID
+  galleryRoutes: [String!]!                            # lista todas as rotas disponíveis
+  
+  # Image Pins (Marcadores)
+  imagePins(galleryImageId: ID!): [ImagePin!]!         # lista pins de uma imagem
+  imagePin(id: ID!): ImagePin                          # busca pin por ID
+  
+  # Configuration (Configurações)
+  appConfig: AppConfig!                                # configurações da aplicação
+  
+  # File Management (Gestão de Arquivos)
+  generateSignedUploadUrl(fileName: String!, contentType: String!, folder: String!): SignedUploadUrl! # gera URL assinada para upload
+  generateBulkDownload(towerId: ID): BulkDownload!     # gera download em lote
 }
 
 type Mutation {
-  # Auth mutations
-  login(input: LoginInput!): AuthPayload!
-  register(input: RegisterInput!): AuthPayload!
-  refreshToken(token: String!): AuthPayload!
-  logout: Boolean!
+  # Towers (Torres)
+  createTower(input: CreateTowerInput!): Tower!        # criar nova torre
+  updateTower(input: UpdateTowerInput!): Tower!        # atualizar torre
+  deleteTower(id: ID!): Boolean!                       # deletar torre
   
-  # User mutations
-  updateProfile(input: UpdateProfileInput!): User!
-  changePassword(input: ChangePasswordInput!): User!
+  # Floors (Pavimentos)
+  createFloor(input: CreateFloorInput!): Floor!        # criar novo pavimento
+  updateFloor(input: UpdateFloorInput!): Floor!        # atualizar pavimento
+  deleteFloor(id: ID!): Boolean!                       # deletar pavimento
   
-  # Tower mutations
-  createTower(input: CreateTowerInput!): Tower!
-  updateTower(id: ID!, input: UpdateTowerInput!): Tower!
-  deleteTower(id: ID!): Boolean!
+  # Apartments (Apartamentos)
+  createApartment(input: CreateApartmentInput!): Apartment!         # criar novo apartamento
+  updateApartment(input: UpdateApartmentInput!): Apartment!         # atualizar apartamento
+  deleteApartment(id: ID!): Boolean!                               # deletar apartamento
+  addApartmentImage(apartmentId: ID!, imageUrl: String!, description: String): ApartmentImage! # adicionar imagem ao apartamento
+  removeApartmentImage(imageId: ID!): Boolean!                     # remover imagem do apartamento
+  reorderApartmentImages(apartmentId: ID!, imageIds: [ID!]!): [ApartmentImage!]! # reordenar imagens do apartamento
   
-  # Floor mutations
-  createFloor(input: CreateFloorInput!): Floor!
-  updateFloor(id: ID!, input: UpdateFloorInput!): Floor!
-  deleteFloor(id: ID!): Boolean!
+  # Gallery (Galeria)
+  createGalleryImage(input: CreateGalleryImageInput!): GalleryImage!       # criar nova imagem na galeria
+  updateGalleryImage(input: UpdateGalleryImageInput!): GalleryImage!       # atualizar imagem da galeria
+  deleteGalleryImage(id: ID!): Boolean!                                    # deletar imagem da galeria
+  reorderGalleryImages(route: String!, imageIds: [ID!]!): [GalleryImage!]! # reordenar imagens da galeria
   
-  # Apartment mutations
-  createApartment(input: CreateApartmentInput!): Apartment!
-  updateApartment(id: ID!, input: UpdateApartmentInput!): Apartment!
-  deleteApartment(id: ID!): Boolean!
+  # Image Pins (Marcadores)
+  createImagePin(input: CreateImagePinInput!): ImagePin!                   # criar novo marcador
+  updateImagePin(input: UpdateImagePinInput!): ImagePin!                   # atualizar marcador
+  deleteImagePin(id: ID!): Boolean!                                        # deletar marcador
+  
+  # Configuration (Configurações)
+  updateAppConfig(logoUrl: String, apiBaseUrl: String, cacheControlMaxAge: Int): AppConfig! # atualizar configurações
 }
 
-type Subscription {
-  towerUpdated(id: ID!): Tower!
-  apartmentUpdated(id: ID!): Apartment!
-}
-
-# User types
-type User {
-  id: ID!
-  email: String!
-  name: String!
-  role: UserRole!
-  avatar: String
-  createdAt: String!
-  updatedAt: String!
-}
-
-enum UserRole {
-  ADMIN
-  CONSULTANT
-  CLIENT
-}
-
-# Tower types
+# Building/Tower (Torre)
 type Tower {
   id: ID!
-  name: String!
-  description: String
-  address: String!
-  city: String!
-  state: String!
-  zipCode: String!
-  totalFloors: Int!
-  totalApartments: Int!
-  images: [Image!]!
-  floors: [Floor!]!
-  createdAt: String!
-  updatedAt: String!
+  name: String!              # nome da torre
+  description: String        # descrição da torre
+  floors: [Floor!]!          # lista de pavimentos
+  totalApartments: Int!      # total de apartamentos
+  createdAt: Time!           # data de criação
+  updatedAt: Time!           # última atualização
 }
 
-# Floor types
+# Floor (Pavimento)
 type Floor {
   id: ID!
+  number: String!            # número do pavimento (ex: "1", "Térreo", "Cobertura")
+  tower: Tower!              # torre a qual pertence
   towerId: ID!
-  tower: Tower!
-  number: Int!
-  name: String!
-  totalApartments: Int!
-  floorPlan: String
-  apartments: [Apartment!]!
-  createdAt: String!
-  updatedAt: String!
+  bannerUrl: String          # URL de banner opcional
+  bannerMetadata: FileMetadata
+  apartments: [Apartment!]!  # lista de apartamentos
+  totalApartments: Int!      # total de apartamentos nesse pavimento
+  createdAt: Time!
+  updatedAt: Time!
 }
 
-# Apartment types
+# Apartment (Apartamento)
 type Apartment {
   id: ID!
+  number: String!            # número do apartamento
+  area: String               # área do apartamento
+  suites: Int                # quantidade de suítes
+  bedrooms: Int              # quantidade de dormitórios
+  parkingSpots: Int          # quantidade de vagas de garagem
+  status: ApartmentStatus!   # status atual
+  floor: Floor!              # pavimento
   floorId: ID!
-  floor: Floor!
-  number: String!
-  type: ApartmentType!
-  area: Float!
-  bedrooms: Int!
-  bathrooms: Int!
-  price: Float!
-  status: ApartmentStatus!
-  features: [String!]!
-  images: [Image!]!
-  videos: [Video!]!
-  virtualTour: String
-  createdAt: String!
-  updatedAt: String!
+  mainImageUrl: String       # imagem principal
+  floorPlanUrl: String       # planta baixa
+  solarPosition: String      # posição solar
+  price: Float               # preço
+  available: Boolean!        # disponível para venda?
+  mainImageMetadata: FileMetadata
+  floorPlanMetadata: FileMetadata
+  images: [ApartmentImage!]! # galeria de imagens do apartamento
+  createdAt: Time!
+  updatedAt: Time!
 }
 
-enum ApartmentType {
-  STUDIO
-  ONE_BEDROOM
-  TWO_BEDROOM
-  THREE_BEDROOM
-  PENTHOUSE
-}
-
+# Apartment Status (Status do Apartamento)
 enum ApartmentStatus {
-  AVAILABLE
-  RESERVED
-  SOLD
-  UNAVAILABLE
+  AVAILABLE     # disponível
+  RESERVED      # reservado
+  SOLD          # vendido
+  MAINTENANCE   # em manutenção
 }
 
-# Media types
-type Image {
+# Apartment Image (Imagem do Apartamento)
+type ApartmentImage {
   id: ID!
-  url: String!
-  thumbnail: String!
-  caption: String
-  order: Int!
+  apartment: Apartment!
+  apartmentId: ID!
+  imageUrl: String!          # URL da imagem
+  imageMetadata: FileMetadata!
+  description: String        # descrição opcional
+  order: Int!                # ordem de exibição
+  createdAt: Time!
 }
 
-type Video {
+# Gallery Image (Imagem de Galeria)
+type GalleryImage {
   id: ID!
-  url: String!
-  thumbnail: String!
-  title: String!
-  duration: Int!
-}
-
-# Auth types
-type AuthPayload {
-  token: String!
-  refreshToken: String!
-  user: User!
-}
-
-# Input types
-input LoginInput {
-  email: String!
-  password: String!
-}
-
-input RegisterInput {
-  email: String!
-  password: String!
-  name: String!
-  role: UserRole
-}
-
-input UpdateProfileInput {
-  name: String
-  avatar: String
-}
-
-input ChangePasswordInput {
-  currentPassword: String!
-  newPassword: String!
-}
-
-input CreateTowerInput {
-  name: String!
+  route: String!             # rota/slug de navegação
+  imageUrl: String!
+  thumbnailUrl: String
+  imageMetadata: FileMetadata!
+  thumbnailMetadata: FileMetadata
+  title: String
   description: String
-  address: String!
-  city: String!
-  state: String!
-  zipCode: String!
-  totalFloors: Int!
+  displayOrder: Int!         # ordem de exibição
+  pins: [ImagePin!]!         # marcadores interativos
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+# Interactive Pins (Marcadores Interativos)
+type ImagePin {
+  id: ID!
+  galleryImage: GalleryImage!
+  galleryImageId: ID!
+  xCoord: Float!             # coordenada X
+  yCoord: Float!             # coordenada Y
+  title: String
+  description: String
+  apartment: Apartment       # ligação com apartamento
+  apartmentId: ID
+  linkUrl: String
+  createdAt: Time!
+}
+
+# File Metadata (Metadados de Arquivo)
+type FileMetadata {
+  fileName: String!
+  fileSize: Int!
+  contentType: String!
+  uploadedAt: Time!
+  checksum: String
+  width: Int
+  height: Int
+}
+
+# Application Config (Configurações da Aplicação)
+type AppConfig {
+  logoUrl: String
+  apiBaseUrl: String!
+  minioBaseUrl: String!
+  appVersion: String!
+  cacheControlMaxAge: Int!
+  updatedAt: Time!
+}
+
+# Signed Upload URL (URL assinada para upload direto)
+type SignedUploadUrl {
+  uploadUrl: String!
+  accessUrl: String!
+  expiresIn: Int!
+  fields: JSON
+}
+
+# Bulk Download Info (Informações de Download em Lote)
+type BulkDownload {
+  downloadUrl: String!
+  fileName: String!
+  fileSize: Int!
+  expiresIn: Int!
+  createdAt: Time!
+}
+
+# Tower Input
+input CreateTowerInput {
+  name: String!              # nome da torre
+  description: String        # descrição da torre
 }
 
 input UpdateTowerInput {
-  name: String
-  description: String
-  address: String
-  city: String
-  state: String
-  zipCode: String
+  id: ID!
+  name: String               # nome da torre
+  description: String        # descrição da torre
 }
 
+# Floor Input
 input CreateFloorInput {
-  towerId: ID!
-  number: Int!
-  name: String!
-  floorPlan: String
+  number: String!            # número do pavimento
+  towerId: ID!               # ID da torre
 }
 
 input UpdateFloorInput {
-  name: String
-  floorPlan: String
+  id: ID!
+  number: String             # número do pavimento
 }
 
+# Apartment Input
 input CreateApartmentInput {
-  floorId: ID!
-  number: String!
-  type: ApartmentType!
-  area: Float!
-  bedrooms: Int!
-  bathrooms: Int!
-  price: Float!
-  status: ApartmentStatus!
-  features: [String!]
-  virtualTour: String
+  number: String!            # número do apartamento
+  floorId: ID!               # ID do pavimento
+  area: String               # área do apartamento
+  suites: Int                # quantidade de suítes
+  bedrooms: Int              # quantidade de dormitórios
+  parkingSpots: Int          # quantidade de vagas
+  status: ApartmentStatus    # status do apartamento
+  solarPosition: String      # posição solar
+  price: Float               # preço
+  available: Boolean         # disponível?
 }
 
 input UpdateApartmentInput {
+  id: ID!
   number: String
-  type: ApartmentType
-  area: Float
+  area: String
+  suites: Int
   bedrooms: Int
-  bathrooms: Int
-  price: Float
+  parkingSpots: Int
   status: ApartmentStatus
-  features: [String!]
-  virtualTour: String
+  solarPosition: String
+  price: Float
+  available: Boolean
+}
+
+# Apartment Search Input
+input ApartmentSearchInput {
+  number: String
+  suites: Int
+  bedrooms: Int
+  parkingSpots: Int
+  solarPosition: String
+  towerId: ID
+  floorId: ID
+  priceMin: Float
+  priceMax: Float
+  areaMin: String
+  areaMax: String
+  status: ApartmentStatus
+  available: Boolean
+  limit: Int
+  offset: Int
+}
+
+# Gallery Input
+input CreateGalleryImageInput {
+  route: String!
+  title: String
+  description: String
+  displayOrder: Int
+}
+
+input UpdateGalleryImageInput {
+  id: ID!
+  title: String
+  description: String
+  displayOrder: Int
+}
+
+# Image Pin Input
+input CreateImagePinInput {
+  galleryImageId: ID!
+  xCoord: Float!
+  yCoord: Float!
+  title: String
+  description: String
+  apartmentId: ID
+  linkUrl: String
+}
+
+input UpdateImagePinInput {
+  id: ID!
+  xCoord: Float
+  yCoord: Float
+  title: String
+  description: String
+  apartmentId: ID
+  linkUrl: String
 }

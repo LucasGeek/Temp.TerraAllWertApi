@@ -10,8 +10,6 @@ import (
 func SetupRoutes(
 	app *fiber.App,
 	userHandler *handler.UserHandler,
-	productHandler *handler.ProductHandler,
-	orderHandler *handler.OrderHandler,
 	healthHandler *handler.HealthHandler,
 	adminHandler *handler.AdminHandler,
 	cfg *config.Config,
@@ -26,16 +24,6 @@ func SetupRoutes(
 	users := v1.Group("/users")
 	users.Get("/", userHandler.GetUsers)
 	users.Post("/", userHandler.CreateUser)
-
-	// Product routes
-	products := v1.Group("/products")
-	products.Get("/", productHandler.GetProducts)
-	products.Post("/", productHandler.CreateProduct)
-
-	// Order routes
-	orders := v1.Group("/orders")
-	orders.Get("/", orderHandler.GetOrders)
-	orders.Post("/", orderHandler.CreateOrder)
 
 	// Admin routes
 	admin := v1.Group("/admin")

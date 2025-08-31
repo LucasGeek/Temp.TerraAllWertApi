@@ -5,8 +5,6 @@ import (
 	"io"
 	"time"
 
-	"api/infra/config"
-
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )

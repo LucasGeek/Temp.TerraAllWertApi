@@ -18,6 +18,7 @@ type Config struct {
 	API      APIConfig
 	CORS     CORSConfig
 	Cache    CacheConfig
+	Minio    MinioConfig
 }
 
 type AppConfig struct {
@@ -76,6 +77,15 @@ type CacheConfig struct {
 	Prefix  string
 }
 
+type MinioConfig struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	BucketName      string
+	UseSSL          bool
+	BaseURL         string
+}
+
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
@@ -130,6 +140,14 @@ func LoadConfig() (*Config, error) {
 			TTL:     getEnvDuration("CACHE_TTL", 5*time.Minute),
 			Enabled: getEnvBool("CACHE_ENABLED", true),
 			Prefix:  getEnv("CACHE_PREFIX", "terra:"),
+		},
+		Minio: MinioConfig{
+			Endpoint:        getEnv("MINIO_ENDPOINT", "localhost:9000"),
+			AccessKeyID:     getEnv("MINIO_ACCESS_KEY_ID", "minioadmin"),
+			SecretAccessKey: getEnv("MINIO_SECRET_ACCESS_KEY", "minioadmin"),
+			BucketName:      getEnv("MINIO_BUCKET_NAME", "terra-allwert"),
+			UseSSL:          getEnvBool("MINIO_USE_SSL", false),
+			BaseURL:         getEnv("MINIO_BASE_URL", "http://localhost:9000"),
 		},
 	}, nil
 }

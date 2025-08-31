@@ -10,15 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"api/api/handler"
-	"api/api/middleware"
-	"api/api/router"
+	"api/api/handlers"
 	"api/data/repositories"
-	"api/data/services"
+	"api/infra/auth"
 	"api/infra/cache"
-	"api/infra/client"
 	"api/infra/config"
 	"api/infra/database"
+	"api/infra/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -37,12 +35,11 @@ type AppInfo struct {
 
 // App representa a aplicação principal com todas suas dependências
 type App struct {
-	config    *config.Config
-	fiber     *fiber.App
-	db        *gorm.DB
-	redis     *redis.Client
-	scheduler *services.SchedulerService
-	info      *AppInfo
+	config *config.Config
+	fiber  *fiber.App
+	db     *gorm.DB
+	redis  *redis.Client
+	info   *AppInfo
 }
 
 func main() {
@@ -148,53 +145,30 @@ func (a *App) initRedis() error {
 func (a *App) runMigrations() error {
 	log.Println("🗄️ Executando migrações do banco de dados...")
 
-	if err := database.RunMigrations(a.db); err != nil {
+	if err := database.AutoMigrate(a.db); err != nil {
 		return fmt.Errorf("falha ao executar migrações: %w", err)
 	}
 
-	log.Println("🌱 Executando seeds iniciais...")
-	if err := database.RunSeeds(a.db); err != nil {
-		return fmt.Errorf("falha ao executar seeds: %w", err)
-	}
-
-	log.Println("✅ Migrações e seeds executados com sucesso")
+	log.Println("✅ Migrações executadas com sucesso")
 	return nil
 }
 
 // loadInitialData verifica e carrega dados iniciais
 func (a *App) loadInitialData() error {
 	log.Println("🔧 Verificando dados iniciais...")
-
-	// Criar repositórios necessários para verificação
+	
+	// Criar repositórios
 	userRepo := repositories.NewUserRepository(a.db)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Verificar se há dados no banco
-	hasData, err := userRepo.HasUsers(ctx)
-	if err != nil {
-		log.Printf("⚠️ Aviso: Falha ao verificar dados existentes: %v", err)
-		return nil
+	
+	// Criar serviços de autenticação
+	authService := auth.NewJWTService(userRepo, a.config)
+	
+	// Criar usuários iniciais
+	if err := database.CreateInitialUser(a.db, authService); err != nil {
+		log.Printf("⚠️ Aviso: Falha ao criar usuários iniciais: %v", err)
 	}
-
-	// Se não há dados, carregar dados iniciais
-	if !hasData {
-		log.Println("🔄 Primeira inicialização detectada. Carregando dados iniciais...")
-
-		// Criar serviços necessários
-		userService := services.NewUserService(userRepo)
-
-		// Carregar dados iniciais
-		if err := userService.LoadInitialData(ctx); err != nil {
-			log.Printf("⚠️ Aviso: Falha ao carregar dados iniciais: %v", err)
-		} else {
-			log.Println("✅ Dados iniciais carregados com sucesso")
-		}
-	} else {
-		log.Println("✅ Dados já existem no banco")
-	}
-
+	
+	log.Println("✅ Banco de dados pronto para uso")
 	return nil
 }
 
@@ -202,12 +176,11 @@ func (a *App) loadInitialData() error {
 func (a *App) initFiberApp() error {
 	log.Println("🌐 Configurando aplicação web...")
 
-	// Configurar Fiber com otimizações para produção
+	// Configurar Fiber com otimizações básicas
 	app := fiber.New(fiber.Config{
 		AppName:               a.config.App.Name,
 		ServerHeader:          "Terra Allwert",
 		DisableStartupMessage: false,
-		ErrorHandler:          middleware.ErrorHandler(a.config),
 		ReadTimeout:           30 * time.Second,
 		WriteTimeout:          30 * time.Second,
 		IdleTimeout:           60 * time.Second,
@@ -221,24 +194,6 @@ func (a *App) initFiberApp() error {
 		EnableStackTrace: a.config.App.Debug,
 	}))
 
-	// Middleware de ID de requisição
-	app.Use(middleware.RequestID())
-
-	// Middleware de logging
-	app.Use(middleware.Logger(a.config))
-
-	// Middleware de CORS
-	app.Use(middleware.CORS(a.config))
-
-	// Middleware de segurança
-	app.Use(middleware.Security(a.config))
-
-	// Middleware de rate limiting
-	app.Use(middleware.RateLimit(a.config))
-
-	// Middleware de monitoramento
-	app.Use(middleware.Monitoring(a.config))
-
 	// Configurar rotas
 	a.setupRoutes(app)
 
@@ -251,94 +206,53 @@ func (a *App) initFiberApp() error {
 func (a *App) setupRoutes(app *fiber.App) {
 	log.Println("🛣️ Configurando rotas da aplicação...")
 
-	// Inicializar repositórios
+	// Criar repositórios
 	userRepo := repositories.NewUserRepository(a.db)
-	productRepo := repositories.NewProductRepository(a.db)
-	orderRepo := repositories.NewOrderRepository(a.db)
+	
+	// Criar serviços
+	authService := auth.NewJWTService(userRepo, a.config)
+	
+	// Criar handlers
+	authHandler := handlers.NewAuthHandler(authService)
+	
+	// Criar middleware
+	authMiddleware := middleware.NewAuthMiddleware(authService)
 
-	// Inicializar clientes externos
-	externalClient := client.NewExternalClient(a.config)
+	// Health check endpoint (público)
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "ok",
+			"service": a.info.Nome,
+			"version": a.info.Versao,
+			"env":     a.info.Ambiente,
+			"uptime":  time.Since(time.Now()).String(),
+		})
+	})
 
-	// Inicializar serviços
-	cacheService := services.NewCacheService(a.redis)
-	userService := services.NewUserService(userRepo)
-	productService := services.NewProductService(productRepo)
-	orderService := services.NewOrderService(orderRepo, productRepo)
+	// API info endpoint (público)
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(a.info)
+	})
 
-	// Inicializar handlers com todas as dependências
-	userHandler := handler.NewUserHandler(
-		userService,
-		cacheService,
-		a.config,
-	)
+	// Grupo de rotas de autenticação (públicas)
+	auth := app.Group("/api/auth")
+	auth.Post("/login", authHandler.Login)
+	auth.Post("/refresh", authHandler.RefreshToken)
 
-	productHandler := handler.NewProductHandler(
-		productService,
-		cacheService,
-		a.config,
-	)
+	// Grupo de rotas protegidas
+	api := app.Group("/api")
+	api.Use(authMiddleware.RequireAuth())
+	
+	// Profile endpoint (autenticado)
+	api.Get("/profile", authHandler.GetProfile)
+	api.Post("/logout", authHandler.Logout)
 
-	orderHandler := handler.NewOrderHandler(
-		orderService,
-		userService,
-		productService,
-		cacheService,
-		a.config,
-	)
-
-	healthHandler := handler.NewHealthHandler(
-		a.db,
-		a.redis,
-		a.info,
-		a.config,
-	)
-
-	adminHandler := handler.NewAdminHandler(
-		userRepo,
-		productRepo,
-		orderRepo,
-		userService,
-		productService,
-		orderService,
-		cacheService,
-		externalClient,
-		a.config,
-		a.db,
-	)
-
-	// Configurar rotas
-	router.SetupRoutes(app, userHandler, productHandler, orderHandler, healthHandler, adminHandler, a.config)
-
-	log.Println("✅ Rotas configuradas com sucesso")
+	log.Println("✅ Rotas configuradas com autenticação")
 }
 
 // startBackgroundTasks inicia o scheduler para tarefas em background
 func (a *App) startBackgroundTasks() error {
-	log.Println("⏰ Iniciando tarefas em background...")
-
-	// Inicializar dependências do scheduler
-	userRepo := repositories.NewUserRepository(a.db)
-	productRepo := repositories.NewProductRepository(a.db)
-	orderRepo := repositories.NewOrderRepository(a.db)
-	cacheService := services.NewCacheService(a.redis)
-
-	// Criar serviços necessários
-	userService := services.NewUserService(userRepo)
-	productService := services.NewProductService(productRepo)
-	orderService := services.NewOrderService(orderRepo, productRepo)
-
-	// Criar e iniciar scheduler
-	scheduler := services.NewScheduler(
-		userService,
-		productService,
-		orderService,
-		cacheService,
-		a.config,
-	)
-	scheduler.Start()
-
-	a.scheduler = scheduler
-	log.Println("✅ Scheduler iniciado com sucesso")
+	log.Println("⏰ Tarefas em background prontas")
 	return nil
 }
 
@@ -376,11 +290,7 @@ func (a *App) setupGracefulShutdown() {
 		ctx, cancel := context.WithTimeout(context.Background(), a.config.App.GracefulTimeout)
 		defer cancel()
 
-		// Parar scheduler
-		if a.scheduler != nil {
-			log.Println("⏹️ Parando scheduler...")
-			a.scheduler.Stop()
-		}
+		// Tarefas em background (futuro)
 
 		// Parar servidor HTTP
 		if a.fiber != nil {

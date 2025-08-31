@@ -12,11 +12,7 @@ import (
 
 type AdminHandler struct {
 	userRepo       *repositories.UserRepository
-	productRepo    *repositories.ProductRepository
-	orderRepo      *repositories.OrderRepository
 	userService    *services.UserService
-	productService *services.ProductService
-	orderService   *services.OrderService
 	cacheService   *services.CacheService
 	externalClient *client.ExternalClient
 	config         *config.Config
@@ -25,11 +21,7 @@ type AdminHandler struct {
 
 func NewAdminHandler(
 	userRepo *repositories.UserRepository,
-	productRepo *repositories.ProductRepository,
-	orderRepo *repositories.OrderRepository,
 	userService *services.UserService,
-	productService *services.ProductService,
-	orderService *services.OrderService,
 	cacheService *services.CacheService,
 	externalClient *client.ExternalClient,
 	cfg *config.Config,
@@ -37,11 +29,7 @@ func NewAdminHandler(
 ) *AdminHandler {
 	return &AdminHandler{
 		userRepo:       userRepo,
-		productRepo:    productRepo,
-		orderRepo:      orderRepo,
 		userService:    userService,
-		productService: productService,
-		orderService:   orderService,
 		cacheService:   cacheService,
 		externalClient: externalClient,
 		config:         cfg,

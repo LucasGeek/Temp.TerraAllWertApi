@@ -8,29 +8,23 @@ import (
 )
 
 type SchedulerService struct {
-	userService    *UserService
-	productService *ProductService
-	orderService   *OrderService
-	cacheService   *CacheService
-	config         *config.Config
-	stopChan       chan struct{}
-	running        bool
+	userService  *UserService
+	cacheService *CacheService
+	config       *config.Config
+	stopChan     chan struct{}
+	running      bool
 }
 
 func NewScheduler(
 	userService *UserService,
-	productService *ProductService,
-	orderService *OrderService,
 	cacheService *CacheService,
 	cfg *config.Config,
 ) *SchedulerService {
 	return &SchedulerService{
-		userService:    userService,
-		productService: productService,
-		orderService:   orderService,
-		cacheService:   cacheService,
-		config:         cfg,
-		stopChan:       make(chan struct{}),
+		userService:  userService,
+		cacheService: cacheService,
+		config:       cfg,
+		stopChan:     make(chan struct{}),
 	}
 }
 
@@ -70,14 +64,14 @@ func (s *SchedulerService) run() {
 
 func (s *SchedulerService) runScheduledTasks() {
 	log.Println("Running scheduled tasks...")
-	
+
 	// Add your scheduled tasks here
 	// Example:
 	// ctx := context.Background()
 	// if err := s.cleanupExpiredData(ctx); err != nil {
 	//     log.Printf("Error cleaning up expired data: %v", err)
 	// }
-	
+
 	log.Println("Scheduled tasks completed")
 }
 
