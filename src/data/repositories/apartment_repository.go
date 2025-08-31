@@ -42,6 +42,16 @@ func (r *apartmentRepository) GetByFloorID(ctx context.Context, floorID string) 
 	return apartments, err
 }
 
+func (r *apartmentRepository) GetByTowerID(ctx context.Context, towerID string) ([]*entities.Apartment, error) {
+	var apartments []*entities.Apartment
+	err := r.db.WithContext(ctx).
+		Preload("Floor").
+		Joins("JOIN floors ON apartments.floor_id = floors.id").
+		Where("floors.tower_id = ?", towerID).
+		Find(&apartments).Error
+	return apartments, err
+}
+
 func (r *apartmentRepository) Update(ctx context.Context, apartment *entities.Apartment) error {
 	return r.db.WithContext(ctx).Save(apartment).Error
 }

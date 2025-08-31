@@ -15,15 +15,15 @@ import (
 // CreateTower is the resolver for the createTower field.
 func (r *mutationResolver) CreateTower(ctx context.Context, input model.CreateTowerInput) (*entities.Tower, error) {
 	tower := &entities.Tower{
-		Name: input.Name,
+		Name:        input.Name,
 		Description: input.Description,
 	}
-	
+
 	err := r.TowerRepo.Create(ctx, tower)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return tower, nil
 }
 
@@ -33,19 +33,19 @@ func (r *mutationResolver) UpdateTower(ctx context.Context, input model.UpdateTo
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if input.Name != nil {
 		tower.Name = *input.Name
 	}
 	if input.Description != nil {
 		tower.Description = input.Description
 	}
-	
+
 	err = r.TowerRepo.Update(ctx, tower)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return tower, nil
 }
 
@@ -76,19 +76,19 @@ func (r *mutationResolver) DeleteFloor(ctx context.Context, id string) (bool, er
 // CreateApartment is the resolver for the createApartment field.
 func (r *mutationResolver) CreateApartment(ctx context.Context, input model.CreateApartmentInput) (*entities.Apartment, error) {
 	apartment := &entities.Apartment{
-		FloorID: input.FloorID,
-		Number: input.Number,
-		Bedrooms: input.Bedrooms,
-		Area: input.Area,
-		Price: input.Price,
+		FloorID:   input.FloorID,
+		Number:    input.Number,
+		Bedrooms:  input.Bedrooms,
+		Area:      input.Area,
+		Price:     input.Price,
 		Available: input.Available,
 	}
-	
+
 	err := r.ApartmentRepo.Create(ctx, apartment)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return apartment, nil
 }
 
@@ -194,7 +194,7 @@ func (r *queryResolver) Apartment(ctx context.Context, id string) (*entities.Apa
 // SearchApartments is the resolver for the searchApartments field.
 func (r *queryResolver) SearchApartments(ctx context.Context, input model.ApartmentSearchInput) ([]*entities.Apartment, error) {
 	criteria := &entities.ApartmentSearchCriteria{}
-	
+
 	if input.Query != nil {
 		criteria.Number = input.Query
 	}
@@ -213,7 +213,7 @@ func (r *queryResolver) SearchApartments(ctx context.Context, input model.Apartm
 	if input.PriceMax != nil {
 		criteria.PriceMax = input.PriceMax
 	}
-	
+
 	return r.ApartmentRepo.Search(ctx, criteria)
 }
 
@@ -257,18 +257,18 @@ func (r *queryResolver) GenerateBulkDownload(ctx context.Context, towerID *strin
 	if towerID == nil {
 		return nil, fmt.Errorf("tower ID is required")
 	}
-	
+
 	result, err := r.BulkDownloadService.GenerateTowerDownload(ctx, *towerID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &entities.BulkDownload{
 		DownloadURL: result.DownloadURL,
-		FileName: result.FileName,
-		FileSize: result.FileSize,
-		ExpiresIn: result.ExpiresIn,
-		CreatedAt: result.CreatedAt,
+		FileName:    result.FileName,
+		FileSize:    result.FileSize,
+		ExpiresIn:   result.ExpiresIn,
+		CreatedAt:   result.CreatedAt,
 	}, nil
 }
 

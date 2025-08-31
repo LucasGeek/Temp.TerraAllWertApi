@@ -11,6 +11,7 @@ type ApartmentRepository interface {
 	Create(ctx context.Context, apartment *entities.Apartment) error
 	GetByID(ctx context.Context, id string) (*entities.Apartment, error)
 	GetByFloorID(ctx context.Context, floorID string) ([]*entities.Apartment, error)
+	GetByTowerID(ctx context.Context, towerID string) ([]*entities.Apartment, error)
 	Update(ctx context.Context, apartment *entities.Apartment) error
 	Delete(ctx context.Context, id string) error
 	
