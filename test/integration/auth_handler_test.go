@@ -66,7 +66,7 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 	app.Post("/login", handler.Login)
 
 	loginRequest := entities.LoginRequest{
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Password: "testpass",
 	}
 
@@ -75,7 +75,7 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 		RefreshToken: "test-refresh-token",
 		User: &entities.User{
 			ID:       "123",
-			Username: "testuser",
+			Email: "testuser@test.com",
 			Role:     entities.RoleViewer,
 		},
 	}
@@ -95,7 +95,7 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "test-token", response.Token)
 	assert.Equal(t, "test-refresh-token", response.RefreshToken)
-	assert.Equal(t, "testuser", response.User.Username)
+	assert.Equal(t, "testuser@test.com", response.User.Email)
 
 	mockAuthService.AssertExpectations(t)
 }
@@ -128,7 +128,7 @@ func TestAuthHandler_Login_ValidationError(t *testing.T) {
 	app.Post("/login", handler.Login)
 
 	loginRequest := entities.LoginRequest{
-		Username: "", // Missing required field
+		Email: "", // Missing required field
 		Password: "testpass",
 	}
 
@@ -162,7 +162,7 @@ func TestAuthHandler_RefreshToken_Success(t *testing.T) {
 		RefreshToken: "new-test-refresh-token",
 		User: &entities.User{
 			ID:       "123",
-			Username: "testuser",
+			Email: "testuser@test.com",
 			Role:     entities.RoleViewer,
 		},
 	}

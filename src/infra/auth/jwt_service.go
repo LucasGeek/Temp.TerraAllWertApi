@@ -29,7 +29,7 @@ func NewJWTService(userRepo interfaces.UserRepository, cfg *config.Config) inter
 }
 
 func (s *jwtService) Login(ctx context.Context, request *entities.LoginRequest) (*entities.LoginResponse, error) {
-	user, err := s.userRepo.GetByUsername(ctx, request.Username)
+	user, err := s.userRepo.GetByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, errors.New("invalid credentials")
 	}

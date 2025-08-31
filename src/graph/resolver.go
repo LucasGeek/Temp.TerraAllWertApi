@@ -10,11 +10,15 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	TowerRepo     interfaces.TowerRepository
-	FloorRepo     interfaces.FloorRepository  
-	ApartmentRepo interfaces.ApartmentRepository
-	GalleryRepo   interfaces.GalleryRepository
-	UserRepo      interfaces.UserRepository
-	StorageService interfaces.StorageService
-	BulkDownloadService *storage.BulkDownloadService
+	TowerRepo            interfaces.TowerRepository
+	FloorRepo            interfaces.FloorRepository  
+	ApartmentRepo        interfaces.ApartmentRepository
+	GalleryRepo          interfaces.GalleryRepository
+	ImagePinRepo         interfaces.ImagePinRepository
+	ApartmentImageRepo   interfaces.ApartmentImageRepository
+	AppConfigRepo        interfaces.AppConfigRepository
+	UserRepo             interfaces.UserRepository
+	AuthService          interfaces.AuthService
+	StorageService       interfaces.StorageService
+	BulkDownloadService  *storage.BulkDownloadService
 }

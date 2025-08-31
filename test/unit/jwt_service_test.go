@@ -120,7 +120,7 @@ func TestJWTService_GenerateTokens(t *testing.T) {
 
 	user := &entities.User{
 		ID:       "123",
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Role:     entities.RoleViewer,
 	}
 
@@ -144,7 +144,7 @@ func TestJWTService_ValidateToken(t *testing.T) {
 
 	user := &entities.User{
 		ID:       "123",
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Role:     entities.RoleViewer,
 	}
 
@@ -154,7 +154,7 @@ func TestJWTService_ValidateToken(t *testing.T) {
 	claims, err := service.ValidateToken(context.Background(), accessToken)
 	assert.NoError(t, err)
 	assert.Equal(t, user.ID, claims.UserID)
-	assert.Equal(t, user.Username, claims.Username)
+	assert.Equal(t, user.Username, claims.Username) // Claims keep username for JWT compatibility
 	assert.Equal(t, user.Role, claims.Role)
 }
 
@@ -171,17 +171,17 @@ func TestJWTService_Login_Success(t *testing.T) {
 	hashedPassword, _ := service.HashPassword("testpassword")
 	user := &entities.User{
 		ID:       "123",
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Password: hashedPassword,
 		Role:     entities.RoleViewer,
 		Active:   true,
 	}
 
-	mockRepo.On("GetByUsername", mock.Anything, "testuser").Return(user, nil)
+	mockRepo.On("GetByEmail", mock.Anything, "testuser@test.com").Return(user, nil)
 	mockRepo.On("UpdateLastLogin", mock.Anything, "123").Return(nil)
 
 	request := &entities.LoginRequest{
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Password: "testpassword",
 	}
 
@@ -190,7 +190,7 @@ func TestJWTService_Login_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, response.Token)
 	assert.NotEmpty(t, response.RefreshToken)
-	assert.Equal(t, user.Username, response.User.Username)
+	assert.Equal(t, user.Email, response.User.Email)
 	assert.Empty(t, response.User.Password) // Password should be cleared
 
 	mockRepo.AssertExpectations(t)
@@ -209,16 +209,16 @@ func TestJWTService_Login_InvalidCredentials(t *testing.T) {
 	hashedPassword, _ := service.HashPassword("testpassword")
 	user := &entities.User{
 		ID:       "123",
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Password: hashedPassword,
 		Role:     entities.RoleViewer,
 		Active:   true,
 	}
 
-	mockRepo.On("GetByUsername", mock.Anything, "testuser").Return(user, nil)
+	mockRepo.On("GetByEmail", mock.Anything, "testuser@test.com").Return(user, nil)
 
 	request := &entities.LoginRequest{
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Password: "wrongpassword",
 	}
 

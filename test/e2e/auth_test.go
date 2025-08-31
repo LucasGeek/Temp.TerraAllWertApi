@@ -33,7 +33,7 @@ func (suite *AuthE2ETestSuite) TestAuthFlow() {
 
 	// Test login
 	loginRequest := entities.LoginRequest{
-		Username: "admin",
+		Email: "admin@terraallwert.com",
 		Password: "admin123",
 	}
 
@@ -56,7 +56,7 @@ func (suite *AuthE2ETestSuite) TestAuthFlow() {
 
 	assert.NotEmpty(suite.T(), loginResponse.Token)
 	assert.NotEmpty(suite.T(), loginResponse.RefreshToken)
-	assert.Equal(suite.T(), "admin", loginResponse.User.Username)
+	assert.Equal(suite.T(), "admin@terraallwert.com", loginResponse.User.Email)
 	assert.Equal(suite.T(), entities.RoleAdmin, loginResponse.User.Role)
 
 	// Test authenticated request

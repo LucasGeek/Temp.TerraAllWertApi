@@ -10,7 +10,7 @@ import (
 func CreateTestUser(role entities.UserRole) *entities.User {
 	return &entities.User{
 		ID:        "test-user-id",
-		Username:  "testuser",
+		Username:  "testuser", // Keep for compatibility
 		Email:     "test@example.com",
 		Password:  "hashedpassword",
 		Role:      role,
@@ -115,7 +115,7 @@ func CreateTestJWTClaims(role entities.UserRole) *entities.JWTClaims {
 // Login fixtures
 func CreateTestLoginRequest() *entities.LoginRequest {
 	return &entities.LoginRequest{
-		Username: "testuser",
+		Email: "testuser@test.com",
 		Password: "testpassword",
 	}
 }

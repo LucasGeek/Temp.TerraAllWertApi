@@ -4,6 +4,9 @@ scalar JSON
 scalar Upload
 
 type Query {
+  # Authentication (Autenticação) - PÚBLICO
+  me: User                                             # dados do usuário logado
+  
   # Torres
   towers: [Tower!]!
   tower(id: ID!): Tower
@@ -32,9 +35,24 @@ type Query {
   # File Management (Gestão de Arquivos)
   generateSignedUploadUrl(fileName: String!, contentType: String!, folder: String!): SignedUploadUrl! # gera URL assinada para upload
   generateBulkDownload(towerId: ID): BulkDownload!     # gera download em lote
+  
+  # User Management (ADMIN APENAS)
+  users: [User!]!                                      # lista todos os usuários
+  user(id: ID!): User                                  # busca usuário por ID
 }
 
 type Mutation {
+  # Authentication (Autenticação) - PÚBLICO
+  login(input: LoginInput!): LoginResponse!            # fazer login
+  refreshToken(refreshToken: String!): LoginResponse! # renovar token
+  logout: Boolean!                                     # fazer logout
+  
+  # User Management (ADMIN APENAS)
+  createUser(input: CreateUserInput!): User!          # criar novo usuário
+  updateUser(input: UpdateUserInput!): User!          # atualizar usuário
+  deleteUser(id: ID!): Boolean!                       # deletar usuário
+  changePassword(input: ChangePasswordInput!): Boolean! # alterar senha
+  
   # Towers (Torres)
   createTower(input: CreateTowerInput!): Tower!        # criar nova torre
   updateTower(input: UpdateTowerInput!): Tower!        # atualizar torre
@@ -308,4 +326,59 @@ input UpdateImagePinInput {
   description: String
   apartmentId: ID
   linkUrl: String
+}
+
+# User Management (Gestão de Usuários)
+type User {
+  id: ID!
+  username: String!          # nome de usuário
+  email: String!             # email
+  role: UserRole!            # papel/função
+  active: Boolean!           # ativo?
+  lastLogin: Time            # último login
+  createdAt: Time!           # data de criação
+  updatedAt: Time!           # última atualização
+}
+
+# User Role (Papel do Usuário)
+enum UserRole {
+  ADMIN                      # administrador (acesso total)
+  VIEWER                     # visualizador (somente leitura)
+}
+
+# Authentication (Autenticação)
+type LoginResponse {
+  token: String!             # token de acesso JWT
+  refreshToken: String!      # token de renovação
+  expiresAt: Time!           # data de expiração do token
+  user: User!                # dados do usuário
+}
+
+# Authentication Input
+input LoginInput {
+  email: String!             # email do usuário
+  password: String!          # senha
+}
+
+# User Management Input
+input CreateUserInput {
+  username: String!          # nome de usuário
+  email: String!             # email
+  password: String!          # senha
+  role: UserRole!            # papel/função
+  active: Boolean            # ativo (padrão: true)
+}
+
+input UpdateUserInput {
+  id: ID!
+  username: String           # nome de usuário
+  email: String              # email
+  role: UserRole             # papel/função
+  active: Boolean            # ativo
+}
+
+input ChangePasswordInput {
+  userId: ID                 # ID do usuário (opcional - se não fornecido, altera própria senha)
+  oldPassword: String        # senha atual (obrigatória se alterando própria senha)
+  newPassword: String!       # nova senha
 }

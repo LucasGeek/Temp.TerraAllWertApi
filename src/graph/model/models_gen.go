@@ -2,9 +2,126 @@
 
 package model
 
+import (
+	"api/domain/entities"
+)
+
+type ApartmentSearchInput struct {
+	Number        *string                   `json:"number,omitempty"`
+	Suites        *int                      `json:"suites,omitempty"`
+	Bedrooms      *int                      `json:"bedrooms,omitempty"`
+	ParkingSpots  *int                      `json:"parkingSpots,omitempty"`
+	SolarPosition *string                   `json:"solarPosition,omitempty"`
+	TowerID       *string                   `json:"towerId,omitempty"`
+	FloorID       *string                   `json:"floorId,omitempty"`
+	PriceMin      *float64                  `json:"priceMin,omitempty"`
+	PriceMax      *float64                  `json:"priceMax,omitempty"`
+	AreaMin       *string                   `json:"areaMin,omitempty"`
+	AreaMax       *string                   `json:"areaMax,omitempty"`
+	Status        *entities.ApartmentStatus `json:"status,omitempty"`
+	Available     *bool                     `json:"available,omitempty"`
+	Limit         *int                      `json:"limit,omitempty"`
+	Offset        *int                      `json:"offset,omitempty"`
+}
+
+type ChangePasswordInput struct {
+	UserID      *string `json:"userId,omitempty"`
+	OldPassword *string `json:"oldPassword,omitempty"`
+	NewPassword string  `json:"newPassword"`
+}
+
+type CreateApartmentInput struct {
+	Number        string                    `json:"number"`
+	FloorID       string                    `json:"floorId"`
+	Area          *string                   `json:"area,omitempty"`
+	Suites        *int                      `json:"suites,omitempty"`
+	Bedrooms      *int                      `json:"bedrooms,omitempty"`
+	ParkingSpots  *int                      `json:"parkingSpots,omitempty"`
+	Status        *entities.ApartmentStatus `json:"status,omitempty"`
+	SolarPosition *string                   `json:"solarPosition,omitempty"`
+	Price         *float64                  `json:"price,omitempty"`
+	Available     *bool                     `json:"available,omitempty"`
+}
+
+type CreateFloorInput struct {
+	Number  string `json:"number"`
+	TowerID string `json:"towerId"`
+}
+
+type CreateGalleryImageInput struct {
+	Route        string  `json:"route"`
+	Title        *string `json:"title,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	DisplayOrder *int    `json:"displayOrder,omitempty"`
+}
+
+type CreateImagePinInput struct {
+	GalleryImageID string  `json:"galleryImageId"`
+	XCoord         float64 `json:"xCoord"`
+	YCoord         float64 `json:"yCoord"`
+	Title          *string `json:"title,omitempty"`
+	Description    *string `json:"description,omitempty"`
+	ApartmentID    *string `json:"apartmentId,omitempty"`
+	LinkURL        *string `json:"linkUrl,omitempty"`
+}
+
 type CreateTowerInput struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
+}
+
+type CreateUserInput struct {
+	Username string            `json:"username"`
+	Email    string            `json:"email"`
+	Password string            `json:"password"`
+	Role     entities.UserRole `json:"role"`
+	Active   *bool             `json:"active,omitempty"`
+}
+
+type LoginInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type Mutation struct {
+}
+
+type Query struct {
+}
+
+type UpdateApartmentInput struct {
+	ID            string                    `json:"id"`
+	Number        *string                   `json:"number,omitempty"`
+	Area          *string                   `json:"area,omitempty"`
+	Suites        *int                      `json:"suites,omitempty"`
+	Bedrooms      *int                      `json:"bedrooms,omitempty"`
+	ParkingSpots  *int                      `json:"parkingSpots,omitempty"`
+	Status        *entities.ApartmentStatus `json:"status,omitempty"`
+	SolarPosition *string                   `json:"solarPosition,omitempty"`
+	Price         *float64                  `json:"price,omitempty"`
+	Available     *bool                     `json:"available,omitempty"`
+}
+
+type UpdateFloorInput struct {
+	ID     string  `json:"id"`
+	Number *string `json:"number,omitempty"`
+}
+
+type UpdateGalleryImageInput struct {
+	ID           string  `json:"id"`
+	Title        *string `json:"title,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	DisplayOrder *int    `json:"displayOrder,omitempty"`
+}
+
+type UpdateImagePinInput struct {
+	ID          string   `json:"id"`
+	XCoord      *float64 `json:"xCoord,omitempty"`
+	YCoord      *float64 `json:"yCoord,omitempty"`
+	Title       *string  `json:"title,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	ApartmentID *string  `json:"apartmentId,omitempty"`
+	LinkURL     *string  `json:"linkUrl,omitempty"`
 }
 
 type UpdateTowerInput struct {
@@ -13,49 +130,10 @@ type UpdateTowerInput struct {
 	Description *string `json:"description,omitempty"`
 }
 
-type CreateFloorInput struct {
-	TowerID     string  `json:"towerId"`
-	Number      string  `json:"number"`
-	Description *string `json:"description,omitempty"`
-}
-
-type UpdateFloorInput struct {
-	ID          string  `json:"id"`
-	Number      *string `json:"number,omitempty"`
-	Description *string `json:"description,omitempty"`
-}
-
-type CreateApartmentInput struct {
-	FloorID   string   `json:"floorId"`
-	Number    string   `json:"number"`
-	Bedrooms  *int     `json:"bedrooms,omitempty"`
-	Area      *string  `json:"area,omitempty"`
-	Price     *float64 `json:"price,omitempty"`
-	Available bool     `json:"available"`
-}
-
-type UpdateApartmentInput struct {
-	ID        string   `json:"id"`
-	Number    *string  `json:"number,omitempty"`
-	Bedrooms  *int     `json:"bedrooms,omitempty"`
-	Area      *string  `json:"area,omitempty"`
-	Price     *float64 `json:"price,omitempty"`
-	Available *bool    `json:"available,omitempty"`
-}
-
-type ApartmentSearchInput struct {
-	Query    *string  `json:"query,omitempty"`
-	Bedrooms *int     `json:"bedrooms,omitempty"`
-	Suites   *int     `json:"suites,omitempty"`
-	TowerID  *string  `json:"towerId,omitempty"`
-	PriceMin *float64 `json:"priceMin,omitempty"`
-	PriceMax *float64 `json:"priceMax,omitempty"`
-}
-
-type ApartmentFilter struct {
-	Bedrooms  *int     `json:"bedrooms,omitempty"`
-	Suites    *int     `json:"suites,omitempty"`
-	PriceMin  *float64 `json:"priceMin,omitempty"`
-	PriceMax  *float64 `json:"priceMax,omitempty"`
-	Available *bool    `json:"available,omitempty"`
+type UpdateUserInput struct {
+	ID       string             `json:"id"`
+	Username *string            `json:"username,omitempty"`
+	Email    *string            `json:"email,omitempty"`
+	Role     *entities.UserRole `json:"role,omitempty"`
+	Active   *bool              `json:"active,omitempty"`
 }

@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -12,13 +14,20 @@ import (
 
 	"api/api/handlers"
 	"api/data/repositories"
+	"api/domain/entities"
+	"api/graph"
+	"api/graph/generated"
 	"api/infra/auth"
 	"api/infra/cache"
 	"api/infra/config"
 	"api/infra/database"
 	"api/infra/middleware"
+	"api/infra/storage"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -40,6 +49,68 @@ type App struct {
 	db     *gorm.DB
 	redis  *redis.Client
 	info   *AppInfo
+}
+
+// Implementações placeholder para serviços faltantes
+type storageServiceImpl struct {
+	config *config.Config
+}
+
+func (s *storageServiceImpl) GenerateSignedUploadURL(ctx context.Context, fileName, contentType, folder string) (*entities.SignedUploadURL, error) {
+	return &entities.SignedUploadURL{
+		UploadURL: "http://localhost:9000/placeholder-upload",
+		AccessURL: "http://localhost:9000/placeholder-access",
+		ExpiresIn: 3600,
+	}, nil
+}
+
+func (s *storageServiceImpl) GenerateSignedDownloadURL(ctx context.Context, objectPath string, expiry time.Duration) (string, error) {
+	return "http://localhost:9000/placeholder-download", nil
+}
+
+func (s *storageServiceImpl) UploadFile(ctx context.Context, objectPath string, reader io.Reader, size int64, contentType string) error {
+	return nil
+}
+
+func (s *storageServiceImpl) DeleteFile(ctx context.Context, objectPath string) error {
+	return nil
+}
+
+func (s *storageServiceImpl) FileExists(ctx context.Context, objectPath string) (bool, error) {
+	return true, nil
+}
+
+func (s *storageServiceImpl) GetFileMetadata(ctx context.Context, objectPath string) (*entities.FileMetadata, error) {
+	return &entities.FileMetadata{
+		FileName:    "placeholder.jpg",
+		FileSize:    1024,
+		ContentType: "image/jpeg",
+		UploadedAt:  time.Now(),
+	}, nil
+}
+
+func (s *storageServiceImpl) CreateBulkDownload(ctx context.Context, towerID string) (*entities.BulkDownload, error) {
+	return &entities.BulkDownload{
+		DownloadURL: "http://localhost:9000/bulk-download.zip",
+		FileName:    "tower-" + towerID + ".zip",
+		FileSize:    1024000,
+		ExpiresIn:   3600,
+		CreatedAt:   time.Now(),
+	}, nil
+}
+
+func (s *storageServiceImpl) GetBulkDownloadStatus(ctx context.Context, downloadID string) (*entities.BulkDownloadStatus, error) {
+	downloadURL := "http://localhost:9000/bulk-download.zip"
+	return &entities.BulkDownloadStatus{
+		ID:             downloadID,
+		Status:         entities.BulkDownloadStateCompleted,
+		Progress:       100,
+		TotalFiles:     10,
+		ProcessedFiles: 10,
+		DownloadURL:    &downloadURL,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}, nil
 }
 
 func main() {
@@ -156,18 +227,18 @@ func (a *App) runMigrations() error {
 // loadInitialData verifica e carrega dados iniciais
 func (a *App) loadInitialData() error {
 	log.Println("🔧 Verificando dados iniciais...")
-	
+
 	// Criar repositórios
 	userRepo := repositories.NewUserRepository(a.db)
-	
+
 	// Criar serviços de autenticação
 	authService := auth.NewJWTService(userRepo, a.config)
-	
+
 	// Criar usuários iniciais
 	if err := database.CreateInitialUser(a.db, authService); err != nil {
 		log.Printf("⚠️ Aviso: Falha ao criar usuários iniciais: %v", err)
 	}
-	
+
 	log.Println("✅ Banco de dados pronto para uso")
 	return nil
 }
@@ -208,15 +279,18 @@ func (a *App) setupRoutes(app *fiber.App) {
 
 	// Criar repositórios
 	userRepo := repositories.NewUserRepository(a.db)
-	
+
 	// Criar serviços
 	authService := auth.NewJWTService(userRepo, a.config)
-	
+
 	// Criar handlers
 	authHandler := handlers.NewAuthHandler(authService)
-	
+
 	// Criar middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
+
+	// Criar middleware GraphQL para autenticação
+	graphqlAuthMiddleware := middleware.NewGraphQLAuthMiddleware(authService)
 
 	// Health check endpoint (público)
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -234,6 +308,59 @@ func (a *App) setupRoutes(app *fiber.App) {
 		return c.JSON(a.info)
 	})
 
+	// GraphQL Playground (desenvolvimento)
+	if a.config.IsDev() {
+		app.Get("/playground", adaptor.HTTPHandler(playground.Handler("GraphQL playground", "/graphql")))
+		log.Println("🎮 GraphQL Playground disponível em /playground")
+	}
+
+	// Criar todos os repositórios necessários para GraphQL
+	towerRepo := repositories.NewTowerRepository(a.db)
+	floorRepo := repositories.NewFloorRepository(a.db)
+	apartmentRepo := repositories.NewApartmentRepository(a.db)
+	galleryRepo := repositories.NewGalleryRepository(a.db)
+	imagePinRepo := repositories.NewImagePinRepository(a.db)
+	apartmentImageRepo := repositories.NewApartmentImageRepository(a.db)
+	appConfigRepo := repositories.NewAppConfigRepository(a.db)
+
+	// Criar serviços de storage (placeholder básico)
+	storageService := &storageServiceImpl{config: a.config}
+	bulkDownloadService := storage.NewBulkDownloadService(
+		nil, // MinIO client placeholder
+		towerRepo,
+		apartmentRepo,
+		galleryRepo,
+		"terra-allwert",
+		"terra-allwert-temp",
+	)
+
+	// GraphQL endpoint com middleware de autenticação
+	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
+		Resolvers: &graph.Resolver{
+			TowerRepo:           towerRepo,
+			FloorRepo:           floorRepo,
+			ApartmentRepo:       apartmentRepo,
+			GalleryRepo:         galleryRepo,
+			ImagePinRepo:        imagePinRepo,
+			ApartmentImageRepo:  apartmentImageRepo,
+			AppConfigRepo:       appConfigRepo,
+			UserRepo:            userRepo,
+			AuthService:         authService,
+			StorageService:      storageService,
+			BulkDownloadService: bulkDownloadService,
+		},
+	}))
+
+	app.Post("/graphql", graphqlAuthMiddleware.HTTPAuthMiddleware(), func(c *fiber.Ctx) error {
+		// Converter Fiber context para http.ResponseWriter e http.Request
+		adaptor.HTTPHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Adicionar usuário do Fiber ao contexto GraphQL
+			r = r.WithContext(middleware.WithUser(r.Context(), c))
+			graphqlHandler.ServeHTTP(w, r)
+		})(c)
+		return nil
+	})
+
 	// Grupo de rotas de autenticação (públicas)
 	auth := app.Group("/api/auth")
 	auth.Post("/login", authHandler.Login)
@@ -242,12 +369,13 @@ func (a *App) setupRoutes(app *fiber.App) {
 	// Grupo de rotas protegidas
 	api := app.Group("/api")
 	api.Use(authMiddleware.RequireAuth())
-	
+
 	// Profile endpoint (autenticado)
 	api.Get("/profile", authHandler.GetProfile)
 	api.Post("/logout", authHandler.Logout)
 
 	log.Println("✅ Rotas configuradas com autenticação")
+	log.Println("📊 GraphQL endpoint disponível em /graphql")
 }
 
 // startBackgroundTasks inicia o scheduler para tarefas em background

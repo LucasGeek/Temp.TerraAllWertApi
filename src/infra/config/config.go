@@ -96,7 +96,7 @@ func LoadConfig() (*Config, error) {
 			Name:            getEnv("APP_NAME", "Terra-Allwert-API"),
 			Version:         getEnv("APP_VERSION", "1.0.0"),
 			Environment:     getEnv("APP_ENV", "development"),
-			Port:            getEnv("APP_PORT", "3000"),
+			Port:            getEnv("APP_PORT", "8080"),
 			Debug:           getEnvBool("APP_DEBUG", true),
 			GracefulTimeout: getEnvDuration("APP_GRACEFUL_TIMEOUT", 30*time.Second),
 		},

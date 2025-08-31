@@ -12,6 +12,132 @@ import (
 	"fmt"
 )
 
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*entities.LoginResponse, error) {
+	loginRequest := &entities.LoginRequest{
+		Email:    input.Email,
+		Password: input.Password,
+	}
+
+	return r.AuthService.Login(ctx, loginRequest)
+}
+
+// RefreshToken is the resolver for the refreshToken field.
+func (r *mutationResolver) RefreshToken(ctx context.Context, refreshToken string) (*entities.LoginResponse, error) {
+	return r.AuthService.RefreshToken(ctx, refreshToken)
+}
+
+// Logout is the resolver for the logout field.
+func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
+	// O logout é geralmente feito no client-side removendo o token
+	// Aqui podemos implementar blacklist de tokens se necessário
+	return true, nil
+}
+
+// CreateUser is the resolver for the createUser field.
+func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*entities.User, error) {
+	hashedPassword, err := r.AuthService.HashPassword(input.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	active := true
+	if input.Active != nil {
+		active = *input.Active
+	}
+
+	user := &entities.User{
+		Username: input.Username,
+		Email:    input.Email,
+		Password: hashedPassword,
+		Role:     entities.UserRole(input.Role),
+		Active:   active,
+	}
+
+	err = r.UserRepo.Create(ctx, user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Remove password from response
+	user.Password = ""
+	return user, nil
+}
+
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*entities.User, error) {
+	user, err := r.UserRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	if input.Username != nil {
+		user.Username = *input.Username
+	}
+	if input.Email != nil {
+		user.Email = *input.Email
+	}
+	if input.Role != nil {
+		user.Role = entities.UserRole(*input.Role)
+	}
+	if input.Active != nil {
+		user.Active = *input.Active
+	}
+
+	err = r.UserRepo.Update(ctx, user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	// Remove password from response
+	user.Password = ""
+	return user, nil
+}
+
+// DeleteUser is the resolver for the deleteUser field.
+func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
+	err := r.UserRepo.Delete(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete user: %w", err)
+	}
+	return true, nil
+}
+
+// ChangePassword is the resolver for the changePassword field.
+func (r *mutationResolver) ChangePassword(ctx context.Context, input model.ChangePasswordInput) (bool, error) {
+	// Se userID não foi fornecido, usar o usuário logado
+	userID := input.UserID
+	if userID == nil {
+		// Pegar o usuário do contexto (implementar middleware de auth)
+		return false, fmt.Errorf("authentication required")
+	}
+
+	user, err := r.UserRepo.GetByID(ctx, *userID)
+	if err != nil {
+		return false, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Se está alterando própria senha, verificar senha atual
+	if input.OldPassword != nil {
+		if !r.AuthService.VerifyPassword(user.Password, *input.OldPassword) {
+			return false, fmt.Errorf("invalid current password")
+		}
+	}
+
+	hashedPassword, err := r.AuthService.HashPassword(input.NewPassword)
+	if err != nil {
+		return false, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user.Password = hashedPassword
+	err = r.UserRepo.Update(ctx, user)
+	if err != nil {
+		return false, fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return true, nil
+}
+
 // CreateTower is the resolver for the createTower field.
 func (r *mutationResolver) CreateTower(ctx context.Context, input model.CreateTowerInput) (*entities.Tower, error) {
 	tower := &entities.Tower{
@@ -62,14 +188,14 @@ func (r *mutationResolver) DeleteTower(ctx context.Context, id string) (bool, er
 func (r *mutationResolver) CreateFloor(ctx context.Context, input model.CreateFloorInput) (*entities.Floor, error) {
 	floor := &entities.Floor{
 		TowerID: input.TowerID,
-		Number: input.Number,
+		Number:  input.Number,
 	}
-	
+
 	err := r.FloorRepo.Create(ctx, floor)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return floor, nil
 }
 
@@ -79,16 +205,16 @@ func (r *mutationResolver) UpdateFloor(ctx context.Context, input model.UpdateFl
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if input.Number != nil {
 		floor.Number = *input.Number
 	}
-	
+
 	err = r.FloorRepo.Update(ctx, floor)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return floor, nil
 }
 
@@ -103,13 +229,27 @@ func (r *mutationResolver) DeleteFloor(ctx context.Context, id string) (bool, er
 
 // CreateApartment is the resolver for the createApartment field.
 func (r *mutationResolver) CreateApartment(ctx context.Context, input model.CreateApartmentInput) (*entities.Apartment, error) {
+	available := true
+	if input.Available != nil {
+		available = *input.Available
+	}
+
+	status := entities.ApartmentStatusAvailable
+	if input.Status != nil {
+		status = entities.ApartmentStatus(*input.Status)
+	}
+
 	apartment := &entities.Apartment{
-		FloorID:   input.FloorID,
-		Number:    input.Number,
-		Bedrooms:  input.Bedrooms,
-		Area:      input.Area,
-		Price:     input.Price,
-		Available: input.Available,
+		FloorID:       input.FloorID,
+		Number:        input.Number,
+		Area:          input.Area,
+		Suites:        input.Suites,
+		Bedrooms:      input.Bedrooms,
+		ParkingSpots:  input.ParkingSpots,
+		Status:        status,
+		SolarPosition: input.SolarPosition,
+		Price:         input.Price,
+		Available:     available,
 	}
 
 	err := r.ApartmentRepo.Create(ctx, apartment)
@@ -126,15 +266,27 @@ func (r *mutationResolver) UpdateApartment(ctx context.Context, input model.Upda
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if input.Number != nil {
 		apartment.Number = *input.Number
+	}
+	if input.Area != nil {
+		apartment.Area = input.Area
+	}
+	if input.Suites != nil {
+		apartment.Suites = input.Suites
 	}
 	if input.Bedrooms != nil {
 		apartment.Bedrooms = input.Bedrooms
 	}
-	if input.Area != nil {
-		apartment.Area = input.Area
+	if input.ParkingSpots != nil {
+		apartment.ParkingSpots = input.ParkingSpots
+	}
+	if input.Status != nil {
+		apartment.Status = entities.ApartmentStatus(*input.Status)
+	}
+	if input.SolarPosition != nil {
+		apartment.SolarPosition = input.SolarPosition
 	}
 	if input.Price != nil {
 		apartment.Price = input.Price
@@ -142,12 +294,12 @@ func (r *mutationResolver) UpdateApartment(ctx context.Context, input model.Upda
 	if input.Available != nil {
 		apartment.Available = *input.Available
 	}
-	
+
 	err = r.ApartmentRepo.Update(ctx, apartment)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return apartment, nil
 }
 
@@ -164,69 +316,192 @@ func (r *mutationResolver) DeleteApartment(ctx context.Context, id string) (bool
 func (r *mutationResolver) AddApartmentImage(ctx context.Context, apartmentID string, imageURL string, description *string) (*entities.ApartmentImage, error) {
 	image := &entities.ApartmentImage{
 		ApartmentID: apartmentID,
-		ImageURL: imageURL,
+		ImageURL:    imageURL,
 		Description: description,
-		Order: 0,
+		Order:       0,
+	}
+	if err := r.ApartmentImageRepo.Create(ctx, image); err != nil {
+		return nil, err
 	}
 	return image, nil
 }
 
 // RemoveApartmentImage is the resolver for the removeApartmentImage field.
 func (r *mutationResolver) RemoveApartmentImage(ctx context.Context, imageID string) (bool, error) {
-	return true, nil
+	return r.ApartmentImageRepo.Delete(ctx, imageID) == nil, nil
 }
 
 // ReorderApartmentImages is the resolver for the reorderApartmentImages field.
-func (r *mutationResolver) ReorderApartmentImages(ctx context.Context, apartmentID string, imageIds []string) (bool, error) {
-	return true, nil
+func (r *mutationResolver) ReorderApartmentImages(ctx context.Context, apartmentID string, imageIds []string) ([]*entities.ApartmentImage, error) {
+	if err := r.ApartmentImageRepo.ReorderImages(ctx, apartmentID, imageIds); err != nil {
+		return nil, err
+	}
+	return r.ApartmentImageRepo.GetByApartmentID(ctx, apartmentID)
 }
 
 // CreateGalleryImage is the resolver for the createGalleryImage field.
-func (r *mutationResolver) CreateGalleryImage(ctx context.Context, imageURL string, route string, description *string) (*entities.GalleryImage, error) {
-	return &entities.GalleryImage{
-		ImageURL: imageURL,
-		Route: route,
-		Description: description,
-	}, nil
+func (r *mutationResolver) CreateGalleryImage(ctx context.Context, input model.CreateGalleryImageInput) (*entities.GalleryImage, error) {
+	displayOrder := 0
+	if input.DisplayOrder != nil {
+		displayOrder = *input.DisplayOrder
+	}
+
+	gallery := &entities.GalleryImage{
+		Route:        input.Route,
+		Title:        input.Title,
+		Description:  input.Description,
+		DisplayOrder: displayOrder,
+	}
+
+	err := r.GalleryRepo.Create(ctx, gallery)
+	if err != nil {
+		return nil, err
+	}
+
+	return gallery, nil
 }
 
 // UpdateGalleryImage is the resolver for the updateGalleryImage field.
-func (r *mutationResolver) UpdateGalleryImage(ctx context.Context, id string, description *string) (*entities.GalleryImage, error) {
-	return &entities.GalleryImage{ID: id, Description: description}, nil
+func (r *mutationResolver) UpdateGalleryImage(ctx context.Context, input model.UpdateGalleryImageInput) (*entities.GalleryImage, error) {
+	gallery, err := r.GalleryRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Title != nil {
+		gallery.Title = input.Title
+	}
+	if input.Description != nil {
+		gallery.Description = input.Description
+	}
+	if input.DisplayOrder != nil {
+		gallery.DisplayOrder = *input.DisplayOrder
+	}
+
+	err = r.GalleryRepo.Update(ctx, gallery)
+	if err != nil {
+		return nil, err
+	}
+
+	return gallery, nil
 }
 
 // DeleteGalleryImage is the resolver for the deleteGalleryImage field.
 func (r *mutationResolver) DeleteGalleryImage(ctx context.Context, id string) (bool, error) {
+	err := r.GalleryRepo.Delete(ctx, id)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
 // ReorderGalleryImages is the resolver for the reorderGalleryImages field.
-func (r *mutationResolver) ReorderGalleryImages(ctx context.Context, route string, imageIds []string) (bool, error) {
-	return true, nil
+func (r *mutationResolver) ReorderGalleryImages(ctx context.Context, route string, imageIds []string) ([]*entities.GalleryImage, error) {
+	if err := r.GalleryRepo.ReorderImages(ctx, route, imageIds); err != nil {
+		return nil, err
+	}
+	return r.GalleryRepo.GetByRoute(ctx, route)
 }
 
 // CreateImagePin is the resolver for the createImagePin field.
-func (r *mutationResolver) CreateImagePin(ctx context.Context, galleryImageID string, x float64, y float64, apartmentID string, description *string) (*entities.ImagePin, error) {
-	return &entities.ImagePin{GalleryImageID: galleryImageID}, nil
+func (r *mutationResolver) CreateImagePin(ctx context.Context, input model.CreateImagePinInput) (*entities.ImagePin, error) {
+	pin := &entities.ImagePin{
+		GalleryImageID: input.GalleryImageID,
+		XCoord:         input.XCoord,
+		YCoord:         input.YCoord,
+		Title:          input.Title,
+		Description:    input.Description,
+		ApartmentID:    input.ApartmentID,
+		LinkURL:        input.LinkURL,
+	}
+
+	if err := r.ImagePinRepo.Create(ctx, pin); err != nil {
+		return nil, err
+	}
+	return pin, nil
 }
 
 // UpdateImagePin is the resolver for the updateImagePin field.
-func (r *mutationResolver) UpdateImagePin(ctx context.Context, id string, x *float64, y *float64, description *string) (*entities.ImagePin, error) {
-	pin := &entities.ImagePin{
-		ID: id,
-		Description: description,
+func (r *mutationResolver) UpdateImagePin(ctx context.Context, input model.UpdateImagePinInput) (*entities.ImagePin, error) {
+	// Get existing pin
+	pin, err := r.ImagePinRepo.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update fields if provided
+	if input.XCoord != nil {
+		pin.XCoord = *input.XCoord
+	}
+	if input.YCoord != nil {
+		pin.YCoord = *input.YCoord
+	}
+	if input.Title != nil {
+		pin.Title = input.Title
+	}
+	if input.Description != nil {
+		pin.Description = input.Description
+	}
+	if input.ApartmentID != nil {
+		pin.ApartmentID = input.ApartmentID
+	}
+	if input.LinkURL != nil {
+		pin.LinkURL = input.LinkURL
+	}
+
+	if err := r.ImagePinRepo.Update(ctx, pin); err != nil {
+		return nil, err
 	}
 	return pin, nil
 }
 
 // DeleteImagePin is the resolver for the deleteImagePin field.
 func (r *mutationResolver) DeleteImagePin(ctx context.Context, id string) (bool, error) {
-	return true, nil
+	return r.ImagePinRepo.Delete(ctx, id) == nil, nil
 }
 
 // UpdateAppConfig is the resolver for the updateAppConfig field.
-func (r *mutationResolver) UpdateAppConfig(ctx context.Context, siteName *string, contactEmail *string, maintenanceMode *bool) (*entities.AppConfig, error) {
-	return &entities.AppConfig{}, nil
+func (r *mutationResolver) UpdateAppConfig(ctx context.Context, logoURL *string, apiBaseURL *string, cacheControlMaxAge *int) (*entities.AppConfig, error) {
+	// Get current config
+	config, err := r.AppConfigRepo.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update fields if provided
+	if logoURL != nil {
+		config.LogoURL = logoURL
+	}
+	if apiBaseURL != nil {
+		config.APIBaseURL = *apiBaseURL
+	}
+	if cacheControlMaxAge != nil {
+		config.CacheControlMaxAge = *cacheControlMaxAge
+	}
+
+	if err := r.AppConfigRepo.Update(ctx, config); err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*entities.User, error) {
+	// Extrair usuário do contexto
+	user, ok := ctx.Value("user").(*entities.User)
+	if !ok || user == nil {
+		return nil, fmt.Errorf("authentication required")
+	}
+
+	// Buscar dados completos do usuário
+	fullUser, err := r.UserRepo.GetByID(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Remove password from response
+	fullUser.Password = ""
+	return fullUser, nil
 }
 
 // Towers is the resolver for the towers field.
@@ -268,25 +543,26 @@ func (r *queryResolver) Apartment(ctx context.Context, id string) (*entities.Apa
 
 // SearchApartments is the resolver for the searchApartments field.
 func (r *queryResolver) SearchApartments(ctx context.Context, input model.ApartmentSearchInput) ([]*entities.Apartment, error) {
-	criteria := &entities.ApartmentSearchCriteria{}
+	criteria := &entities.ApartmentSearchCriteria{
+		Number:        input.Number,
+		Suites:        input.Suites,
+		Bedrooms:      input.Bedrooms,
+		ParkingSpots:  input.ParkingSpots,
+		SolarPosition: input.SolarPosition,
+		TowerID:       input.TowerID,
+		FloorID:       input.FloorID,
+		PriceMin:      input.PriceMin,
+		PriceMax:      input.PriceMax,
+		AreaMin:       input.AreaMin,
+		AreaMax:       input.AreaMax,
+		Available:     input.Available,
+		Limit:         input.Limit,
+		Offset:        input.Offset,
+	}
 
-	if input.Query != nil {
-		criteria.Number = input.Query
-	}
-	if input.Bedrooms != nil {
-		criteria.Bedrooms = input.Bedrooms
-	}
-	if input.Suites != nil {
-		criteria.Suites = input.Suites
-	}
-	if input.TowerID != nil {
-		criteria.TowerID = input.TowerID
-	}
-	if input.PriceMin != nil {
-		criteria.PriceMin = input.PriceMin
-	}
-	if input.PriceMax != nil {
-		criteria.PriceMax = input.PriceMax
+	if input.Status != nil {
+		status := entities.ApartmentStatus(*input.Status)
+		criteria.Status = &status
 	}
 
 	return r.ApartmentRepo.Search(ctx, criteria)
@@ -307,22 +583,22 @@ func (r *queryResolver) GalleryImage(ctx context.Context, id string) (*entities.
 
 // GalleryRoutes is the resolver for the galleryRoutes field.
 func (r *queryResolver) GalleryRoutes(ctx context.Context) ([]string, error) {
-	return []string{"home", "gallery", "apartments"}, nil
+	return []string{"home", "apartments", "amenities"}, nil
 }
 
 // ImagePins is the resolver for the imagePins field.
 func (r *queryResolver) ImagePins(ctx context.Context, galleryImageID string) ([]*entities.ImagePin, error) {
-	return []*entities.ImagePin{}, nil
+	return r.ImagePinRepo.GetByGalleryImageID(ctx, galleryImageID)
 }
 
 // ImagePin is the resolver for the imagePin field.
 func (r *queryResolver) ImagePin(ctx context.Context, id string) (*entities.ImagePin, error) {
-	return &entities.ImagePin{ID: id}, nil
+	return r.ImagePinRepo.GetByID(ctx, id)
 }
 
 // AppConfig is the resolver for the appConfig field.
 func (r *queryResolver) AppConfig(ctx context.Context) (*entities.AppConfig, error) {
-	return &entities.AppConfig{}, nil
+	return r.AppConfigRepo.Get(ctx)
 }
 
 // GenerateSignedUploadURL is the resolver for the generateSignedUploadUrl field.
@@ -350,9 +626,36 @@ func (r *queryResolver) GenerateBulkDownload(ctx context.Context, towerID *strin
 	}, nil
 }
 
+// Users is the resolver for the users field.
+func (r *queryResolver) Users(ctx context.Context) ([]*entities.User, error) {
+	users, err := r.UserRepo.List(ctx, 100, 0) // Limit 100 users for now
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users: %w", err)
+	}
+
+	// Remove passwords from response
+	for _, user := range users {
+		user.Password = ""
+	}
+
+	return users, nil
+}
+
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id string) (*entities.User, error) {
+	user, err := r.UserRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Remove password from response
+	user.Password = ""
+	return user, nil
+}
+
 // Fields is the resolver for the fields field.
-func (r *signedUploadUrlResolver) Fields(ctx context.Context, obj *entities.SignedUploadURL) (any, error) {
-	return obj.Fields, nil
+func (r *signedUploadUrlResolver) Fields(ctx context.Context, obj *entities.SignedUploadURL) (*string, error) {
+	panic(fmt.Errorf("not implemented: Fields - fields"))
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -361,8 +664,8 @@ func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResol
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-// SignedUploadUrl returns SignedUploadUrlResolver implementation.
-func (r *Resolver) SignedUploadUrl() *signedUploadUrlResolver {
+// SignedUploadUrl returns generated.SignedUploadUrlResolver implementation.
+func (r *Resolver) SignedUploadUrl() generated.SignedUploadUrlResolver {
 	return &signedUploadUrlResolver{r}
 }
 
