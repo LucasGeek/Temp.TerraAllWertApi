@@ -3,14 +3,14 @@ package services
 import (
 	"context"
 
-	"api/data/repositories"
+	"api/domain/interfaces"
 )
 
 type UserService struct {
-	userRepo *repositories.UserRepository
+	userRepo interfaces.UserRepository
 }
 
-func NewUserService(userRepo *repositories.UserRepository) *UserService {
+func NewUserService(userRepo interfaces.UserRepository) *UserService {
 	return &UserService{
 		userRepo: userRepo,
 	}
