@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"api/api/handlers"
 	"api/domain/entities"
 
 	"github.com/gofiber/fiber/v2"
@@ -59,7 +60,7 @@ func (m *MockAuthService) GenerateTokens(ctx context.Context, user *entities.Use
 
 func TestAuthHandler_Login_Success(t *testing.T) {
 	mockAuthService := new(MockAuthService)
-	handler := NewAuthHandler(mockAuthService)
+	handler := handlers.NewAuthHandler(mockAuthService)
 
 	app := fiber.New()
 	app.Post("/login", handler.Login)
@@ -101,7 +102,7 @@ func TestAuthHandler_Login_Success(t *testing.T) {
 
 func TestAuthHandler_Login_InvalidBody(t *testing.T) {
 	mockAuthService := new(MockAuthService)
-	handler := NewAuthHandler(mockAuthService)
+	handler := handlers.NewAuthHandler(mockAuthService)
 
 	app := fiber.New()
 	app.Post("/login", handler.Login)
@@ -121,7 +122,7 @@ func TestAuthHandler_Login_InvalidBody(t *testing.T) {
 
 func TestAuthHandler_Login_ValidationError(t *testing.T) {
 	mockAuthService := new(MockAuthService)
-	handler := NewAuthHandler(mockAuthService)
+	handler := handlers.NewAuthHandler(mockAuthService)
 
 	app := fiber.New()
 	app.Post("/login", handler.Login)
@@ -147,7 +148,7 @@ func TestAuthHandler_Login_ValidationError(t *testing.T) {
 
 func TestAuthHandler_RefreshToken_Success(t *testing.T) {
 	mockAuthService := new(MockAuthService)
-	handler := NewAuthHandler(mockAuthService)
+	handler := handlers.NewAuthHandler(mockAuthService)
 
 	app := fiber.New()
 	app.Post("/refresh", handler.RefreshToken)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"api/domain/entities"
+	"api/infra/auth"
 	"api/infra/config"
 
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,7 @@ func TestJWTService_HashPassword(t *testing.T) {
 			AccessTokenExpiry:  15 * time.Minute,
 		},
 	}
-	service := NewJWTService(mockRepo, cfg)
+	service := auth.NewJWTService(mockRepo, cfg)
 
 	password := "testpassword123"
 	hashedPassword, err := service.HashPassword(password)
@@ -95,7 +96,7 @@ func TestJWTService_VerifyPassword(t *testing.T) {
 			AccessTokenExpiry:  15 * time.Minute,
 		},
 	}
-	service := NewJWTService(mockRepo, cfg)
+	service := auth.NewJWTService(mockRepo, cfg)
 
 	password := "testpassword123"
 	hashedPassword, _ := service.HashPassword(password)
@@ -115,7 +116,7 @@ func TestJWTService_GenerateTokens(t *testing.T) {
 			AccessTokenExpiry:  15 * time.Minute,
 		},
 	}
-	service := NewJWTService(mockRepo, cfg)
+	service := auth.NewJWTService(mockRepo, cfg)
 
 	user := &entities.User{
 		ID:       "123",
@@ -139,7 +140,7 @@ func TestJWTService_ValidateToken(t *testing.T) {
 			AccessTokenExpiry:  15 * time.Minute,
 		},
 	}
-	service := NewJWTService(mockRepo, cfg)
+	service := auth.NewJWTService(mockRepo, cfg)
 
 	user := &entities.User{
 		ID:       "123",
@@ -165,7 +166,7 @@ func TestJWTService_Login_Success(t *testing.T) {
 			AccessTokenExpiry:  15 * time.Minute,
 		},
 	}
-	service := NewJWTService(mockRepo, cfg)
+	service := auth.NewJWTService(mockRepo, cfg)
 
 	hashedPassword, _ := service.HashPassword("testpassword")
 	user := &entities.User{
@@ -203,7 +204,7 @@ func TestJWTService_Login_InvalidCredentials(t *testing.T) {
 			AccessTokenExpiry:  15 * time.Minute,
 		},
 	}
-	service := NewJWTService(mockRepo, cfg)
+	service := auth.NewJWTService(mockRepo, cfg)
 
 	hashedPassword, _ := service.HashPassword("testpassword")
 	user := &entities.User{

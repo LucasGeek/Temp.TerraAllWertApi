@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"api/data/repositories"
 	"api/domain/entities"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func TestTowerRepository_Create(t *testing.T) {
 	t.Skip("Skipping integration test - requires test database setup")
 
 	db := setupTestDB(t)
-	repo := NewTowerRepository(db)
+	repo := repositories.NewTowerRepository(db)
 	ctx := context.Background()
 
 	tower := &entities.Tower{
@@ -51,7 +52,7 @@ func TestTowerRepository_GetByID(t *testing.T) {
 	t.Skip("Skipping integration test - requires test database setup")
 
 	db := setupTestDB(t)
-	repo := NewTowerRepository(db)
+	repo := repositories.NewTowerRepository(db)
 	ctx := context.Background()
 
 	// Create a tower first
@@ -73,7 +74,7 @@ func TestTowerRepository_Update(t *testing.T) {
 	t.Skip("Skipping integration test - requires test database setup")
 
 	db := setupTestDB(t)
-	repo := NewTowerRepository(db)
+	repo := repositories.NewTowerRepository(db)
 	ctx := context.Background()
 
 	// Create a tower first
@@ -101,7 +102,7 @@ func TestTowerRepository_Delete(t *testing.T) {
 	t.Skip("Skipping integration test - requires test database setup")
 
 	db := setupTestDB(t)
-	repo := NewTowerRepository(db)
+	repo := repositories.NewTowerRepository(db)
 	ctx := context.Background()
 
 	// Create a tower first
@@ -125,7 +126,7 @@ func TestTowerRepository_ExistsByName(t *testing.T) {
 	t.Skip("Skipping integration test - requires test database setup")
 
 	db := setupTestDB(t)
-	repo := NewTowerRepository(db)
+	repo := repositories.NewTowerRepository(db)
 	ctx := context.Background()
 
 	// Test non-existing tower
