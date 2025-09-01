@@ -46,7 +46,7 @@ LOGIN_QUERY='mutation Login($input: LoginInput!) {
 
 LOGIN_VARIABLES='{
   "input": {
-    "email": "admin@terraallwert.com",
+    "email": "admin@euvatar.com",
     "password": "admin123"
   }
 }'
@@ -178,10 +178,10 @@ echo "✅ Refresh de token"
 echo "✅ Query pública de apartamentos"
 echo
 echo "Credenciais disponíveis:"
-echo "  ADMIN:  admin@terraallwert.com / admin123"
-echo "  VIEWER: viewer@terraallwert.com / viewer123"
-echo "  ADMIN:  admin2@terraallwert.com / admin123" 
-echo "  VIEWER: demo@terraallwert.com / demo123"
+echo "  ADMIN:  admin@euvatar.com / admin123"
+echo "  VIEWER: viewer@euvatar.com / viewer123"
+echo "  ADMIN:  admin2@euvatar.com / admin123" 
+echo "  VIEWER: demo@euvatar.com / demo123"
 echo
 echo "Se todos os testes passaram, o sistema de autenticação está funcionando! 🚀"
 echo "Para usar GraphQL Playground: http://localhost:3000/graphql"

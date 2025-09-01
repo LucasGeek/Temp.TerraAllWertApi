@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"api/api/handlers"
 	"api/data/repositories"
 	"api/domain/entities"
 	"api/graph"
@@ -21,6 +20,7 @@ import (
 	"api/infra/cache"
 	"api/infra/config"
 	"api/infra/database"
+	"api/domain/errors"
 	"api/infra/middleware"
 	"api/infra/storage"
 
@@ -283,12 +283,6 @@ func (a *App) setupRoutes(app *fiber.App) {
 	// Criar serviços
 	authService := auth.NewJWTService(userRepo, a.config)
 
-	// Criar handlers
-	authHandler := handlers.NewAuthHandler(authService)
-
-	// Criar middleware
-	authMiddleware := middleware.NewAuthMiddleware(authService)
-
 	// Criar middleware GraphQL para autenticação
 	graphqlAuthMiddleware := middleware.NewGraphQLAuthMiddleware(authService)
 
@@ -301,11 +295,6 @@ func (a *App) setupRoutes(app *fiber.App) {
 			"env":     a.info.Ambiente,
 			"uptime":  time.Since(time.Now()).String(),
 		})
-	})
-
-	// API info endpoint (público)
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(a.info)
 	})
 
 	// GraphQL Playground (desenvolvimento)
@@ -334,7 +323,7 @@ func (a *App) setupRoutes(app *fiber.App) {
 		"terra-allwert-temp",
 	)
 
-	// GraphQL endpoint com middleware de autenticação
+	// GraphQL endpoint com middleware de autenticação e tratamento de erros
 	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
 		Resolvers: &graph.Resolver{
 			TowerRepo:           towerRepo,
@@ -351,6 +340,10 @@ func (a *App) setupRoutes(app *fiber.App) {
 		},
 	}))
 
+	// Configurar tratamento de erros customizado
+	graphqlHandler.SetErrorPresenter(errors.ErrorPresenter)
+	graphqlHandler.SetRecoverFunc(errors.RecoverFunc)
+
 	app.Post("/graphql", graphqlAuthMiddleware.HTTPAuthMiddleware(), func(c *fiber.Ctx) error {
 		// Converter Fiber context para http.ResponseWriter e http.Request
 		adaptor.HTTPHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -361,20 +354,7 @@ func (a *App) setupRoutes(app *fiber.App) {
 		return nil
 	})
 
-	// Grupo de rotas de autenticação (públicas)
-	auth := app.Group("/api/auth")
-	auth.Post("/login", authHandler.Login)
-	auth.Post("/refresh", authHandler.RefreshToken)
-
-	// Grupo de rotas protegidas
-	api := app.Group("/api")
-	api.Use(authMiddleware.RequireAuth())
-
-	// Profile endpoint (autenticado)
-	api.Get("/profile", authHandler.GetProfile)
-	api.Post("/logout", authHandler.Logout)
-
-	log.Println("✅ Rotas configuradas com autenticação")
+	log.Println("✅ Aplicação configurada apenas com GraphQL")
 	log.Println("📊 GraphQL endpoint disponível em /graphql")
 }
 
@@ -391,7 +371,7 @@ func (a *App) Start() {
 	log.Printf("🌟 Servidor iniciando na porta %s", a.config.App.Port)
 	log.Printf("📊 Ambiente: %s", a.config.App.Environment)
 	log.Printf("🔗 URL: http://localhost%s", port)
-	log.Printf("📚 Documentação: http://localhost%s/api/v1/docs", port)
+	log.Printf("📊 GraphQL: http://localhost%s/graphql", port)
 	log.Printf("💚 Health Check: http://localhost%s/health", port)
 
 	if a.config.IsPrd() {

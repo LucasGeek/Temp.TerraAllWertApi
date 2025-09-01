@@ -58,10 +58,10 @@ func createInitialUsers(db *gorm.DB, authService interfaces.AuthService) error {
 		Password string
 		Role     entities.UserRole
 	}{
-		{"admin", "admin@terraallwert.com", "admin123", entities.RoleAdmin},
-		{"viewer", "viewer@terraallwert.com", "viewer123", entities.RoleViewer},
-		{"admin2", "admin2@terraallwert.com", "admin123", entities.RoleAdmin},
-		{"demo", "demo@terraallwert.com", "demo123", entities.RoleViewer},
+		{"admin", "admin@euvatar.com", "admin123", entities.RoleAdmin},
+		{"viewer", "viewer@euvatar.com", "viewer123", entities.RoleViewer},
+		{"admin2", "admin2@euvatar.com", "admin123", entities.RoleAdmin},
+		{"demo", "demo@euvatar.com", "demo123", entities.RoleViewer},
 	}
 
 	for _, userData := range users {
@@ -86,10 +86,10 @@ func createInitialUsers(db *gorm.DB, authService interfaces.AuthService) error {
 	}
 
 	log.Println("👤 Sample credentials (login with email):")
-	log.Println("   - Admin: admin@terraallwert.com / admin123")
-	log.Println("   - Viewer: viewer@terraallwert.com / viewer123")
-	log.Println("   - Admin2: admin2@terraallwert.com / admin123")
-	log.Println("   - Demo (Viewer): demo@terraallwert.com / demo123")
+	log.Println("   - Admin: admin@euvatar.com / admin123")
+	log.Println("   - Viewer: viewer@euvatar.com / viewer123")
+	log.Println("   - Admin2: admin2@euvatar.com / admin123")
+	log.Println("   - Demo (Viewer): demo@euvatar.com / demo123")
 
 	return nil
 }

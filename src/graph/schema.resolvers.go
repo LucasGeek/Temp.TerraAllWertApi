@@ -6,10 +6,14 @@ package graph
 
 import (
 	"api/domain/entities"
+	appErrors "api/domain/errors"
 	"api/graph/generated"
 	"api/graph/model"
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 )
 
 // Login is the resolver for the login field.
@@ -38,7 +42,7 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*entities.User, error) {
 	hashedPassword, err := r.AuthService.HashPassword(input.Password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to hash password: %w", err)
+		return nil, appErrors.ErrInternalServer
 	}
 
 	active := true
@@ -56,7 +60,16 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 
 	err = r.UserRepo.Create(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+		errStr := fmt.Sprintf("%v", err)
+		if strings.Contains(errStr, "duplicate key") {
+			if strings.Contains(errStr, "email") {
+				return nil, appErrors.ErrEmailExists
+			}
+			if strings.Contains(errStr, "username") {
+				return nil, appErrors.ErrUsernameExists
+			}
+		}
+		return nil, appErrors.ErrInternalServer
 	}
 
 	// Remove password from response
@@ -68,7 +81,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUse
 func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUserInput) (*entities.User, error) {
 	user, err := r.UserRepo.GetByID(ctx, input.ID)
 	if err != nil {
-		return nil, fmt.Errorf("user not found: %w", err)
+		return nil, appErrors.NotFoundError("Usuário")
 	}
 
 	if input.Username != nil {
@@ -86,7 +99,16 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 
 	err = r.UserRepo.Update(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update user: %w", err)
+		errStr := fmt.Sprintf("%v", err)
+		if strings.Contains(errStr, "duplicate key") {
+			if strings.Contains(errStr, "email") {
+				return nil, appErrors.ErrEmailExists
+			}
+			if strings.Contains(errStr, "username") {
+				return nil, appErrors.ErrUsernameExists
+			}
+		}
+		return nil, appErrors.ErrInternalServer
 	}
 
 	// Remove password from response
@@ -98,7 +120,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
 	err := r.UserRepo.Delete(ctx, id)
 	if err != nil {
-		return false, fmt.Errorf("failed to delete user: %w", err)
+		return false, appErrors.NotFoundError("Usuário")
 	}
 	return true, nil
 }
@@ -485,6 +507,339 @@ func (r *mutationResolver) UpdateAppConfig(ctx context.Context, logoURL *string,
 	return config, nil
 }
 
+// GetSignedUploadURL is the resolver for the getSignedUploadUrl field.
+func (r *mutationResolver) GetSignedUploadURL(ctx context.Context, input model.SignedUploadURLInput) (*model.SignedUploadURLResponse, error) {
+	serviceInput := &entities.SignedUploadURLInput{
+		FileName:    input.FileName,
+		FileType:    input.FileType,
+		ContentType: input.ContentType,
+		RouteID:     input.RouteID,
+		Context:     convertFileContext(input.Context),
+	}
+	
+	response, err := r.FileService.GetSignedUploadURL(ctx, serviceInput)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &model.SignedUploadURLResponse{
+		UploadURL: response.UploadURL,
+		MinioPath: response.MinioPath,
+		ExpiresAt: response.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		FileID:    response.FileID,
+	}, nil
+}
+
+// ConfirmFileUpload is the resolver for the confirmFileUpload field.
+func (r *mutationResolver) ConfirmFileUpload(ctx context.Context, input model.ConfirmFileUploadInput) (*model.ConfirmFileUploadResponse, error) {
+	serviceInput := &entities.ConfirmFileUploadInput{
+		FileID:           input.FileID,
+		MinioPath:        input.MinioPath,
+		RouteID:          input.RouteID,
+		OriginalFileName: input.OriginalFileName,
+		FileSize:         input.FileSize,
+		Checksum:         input.Checksum,
+		Context:          convertFileContext(input.Context),
+	}
+	
+	response, err := r.FileService.ConfirmFileUpload(ctx, serviceInput)
+	if err != nil {
+		return nil, err
+	}
+	
+	var fileMetadata *model.FileMetadataExtended
+	if response.FileMetadata != nil {
+		var metadataStr *string
+		if response.FileMetadata.Metadata != nil {
+			metadata, _ := json.Marshal(response.FileMetadata.Metadata)
+			metadataJSON := string(metadata)
+			metadataStr = &metadataJSON
+		}
+		
+		fileMetadata = &model.FileMetadataExtended{
+			ID:           response.FileMetadata.ID,
+			URL:          response.FileMetadata.URL,
+			DownloadURL:  &response.FileMetadata.DownloadURL,
+			ThumbnailURL: &response.FileMetadata.ThumbnailURL,
+			Metadata:     metadataStr,
+		}
+	}
+	
+	return &model.ConfirmFileUploadResponse{
+		Success:      response.Success,
+		FileMetadata: fileMetadata,
+	}, nil
+}
+
+// RequestFullSync is the resolver for the requestFullSync field.
+func (r *mutationResolver) RequestFullSync(ctx context.Context, input model.FullSyncInput) (*model.FullSyncResponse, error) {
+	// TODO: Implementar lógica de criação de ZIP
+	syncID := fmt.Sprintf("sync_%d", time.Now().Unix())
+	expiresAt := time.Now().Add(24 * time.Hour)
+	
+	return &model.FullSyncResponse{
+		ZipURL:        fmt.Sprintf("https://storage.example.com/syncs/%s.zip", syncID),
+		ExpiresAt:     expiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		TotalFiles:    10, // stub
+		EstimatedSize: 1024000, // 1MB stub
+		SyncID:        syncID,
+	}, nil
+}
+
+// UpdateSyncMetadata is the resolver for the updateSyncMetadata field.
+func (r *mutationResolver) UpdateSyncMetadata(ctx context.Context, input model.SyncMetadataInput) (*model.UpdateSyncMetadataResponse, error) {
+	serverTimestamp := time.Now().Format("2006-01-02T15:04:05Z07:00")
+	return &model.UpdateSyncMetadataResponse{
+		Success:         true,
+		ServerTimestamp: &serverTimestamp,
+	}, nil
+}
+
+// UpdateRouteBusinessData is the resolver for the updateRouteBusinessData field.
+func (r *mutationResolver) UpdateRouteBusinessData(ctx context.Context, input model.RouteBusinessDataInput) (*model.UpdateRouteBusinessDataResponse, error) {
+	lastModified := time.Now().Format("2006-01-02T15:04:05Z07:00")
+	return &model.UpdateRouteBusinessDataResponse{
+		Success:      true,
+		LastModified: &lastModified,
+		Conflicts:    []*model.ConflictData{},
+	}, nil
+}
+
+// CreateMenu is the resolver for the createMenu field.
+func (r *mutationResolver) CreateMenu(ctx context.Context, input model.CreateMenuInput) (*model.MenuResponse, error) {
+	return &model.MenuResponse{
+		Menu: &model.Menu{
+			ID:     fmt.Sprintf("menu_%d", time.Now().Unix()),
+			Title:  input.Title,
+			Type:   input.Type,
+			Route:  input.Route,
+			Order:  input.Order,
+			IsActive: true,
+		},
+	}, nil
+}
+
+// UpdateMenu is the resolver for the updateMenu field.
+func (r *mutationResolver) UpdateMenu(ctx context.Context, input model.UpdateMenuInput) (*model.MenuResponse, error) {
+	return &model.MenuResponse{
+		Menu: &model.Menu{
+			ID:     input.MenuID,
+			Title:  *input.Title,
+			Type:   model.MenuTypeMain, // stub
+			Route:  *input.Route,
+			Order:  *input.Order,
+			IsActive: *input.IsActive,
+		},
+	}, nil
+}
+
+// DeleteMenu is the resolver for the deleteMenu field.
+func (r *mutationResolver) DeleteMenu(ctx context.Context, menuID string) (*model.DeleteResponse, error) {
+	return &model.DeleteResponse{
+		Success: true,
+	}, nil
+}
+
+// CreateImageCarousel is the resolver for the createImageCarousel field.
+func (r *mutationResolver) CreateImageCarousel(ctx context.Context, input model.CreateImageCarouselInput) (*model.ImageCarouselResponse, error) {
+	return &model.ImageCarouselResponse{
+		Carousel: &model.ImageCarousel{
+			ID:          fmt.Sprintf("carousel_%d", time.Now().Unix()),
+			Title:       input.Title,
+			Route:       input.Route,
+			Items:       []*model.CarouselItem{},
+			CreatedAt:   time.Now().Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:   time.Now().Format("2006-01-02T15:04:05Z07:00"),
+		},
+	}, nil
+}
+
+// UpdateImageCarousel is the resolver for the updateImageCarousel field.
+func (r *mutationResolver) UpdateImageCarousel(ctx context.Context, input model.UpdateImageCarouselInput) (*model.ImageCarouselResponse, error) {
+	return &model.ImageCarouselResponse{
+		Carousel: &model.ImageCarousel{
+			ID:    input.CarouselID,
+			Title: *input.Title,
+			Route: "example-route",
+			Items: []*model.CarouselItem{},
+			CreatedAt: time.Now().AddDate(0, -1, 0).Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt: time.Now().Format("2006-01-02T15:04:05Z07:00"),
+		},
+	}, nil
+}
+
+// AddCarouselItem is the resolver for the addCarouselItem field.
+func (r *mutationResolver) AddCarouselItem(ctx context.Context, input model.AddCarouselItemInput) (*model.CarouselItemResponse, error) {
+	return &model.CarouselItemResponse{
+		Item: &model.CarouselItem{
+			ID:    fmt.Sprintf("item_%d", time.Now().Unix()),
+			Type:  input.Type,
+			URL:   *input.URL,
+			Order: input.Order,
+		},
+	}, nil
+}
+
+// RemoveCarouselItem is the resolver for the removeCarouselItem field.
+func (r *mutationResolver) RemoveCarouselItem(ctx context.Context, carouselID string, itemID string) (*model.DeleteResponse, error) {
+	return &model.DeleteResponse{
+		Success: true,
+	}, nil
+}
+
+// ReorderCarouselItems is the resolver for the reorderCarouselItems field.
+func (r *mutationResolver) ReorderCarouselItems(ctx context.Context, input model.ReorderCarouselItemsInput) (*model.ReorderResponse, error) {
+	return &model.ReorderResponse{
+		Success: true,
+		Items:   []*model.CarouselItem{},
+	}, nil
+}
+
+// CreateFloorPlan is the resolver for the createFloorPlan field.
+func (r *mutationResolver) CreateFloorPlan(ctx context.Context, input model.CreateFloorPlanInput) (*model.FloorPlanResponse, error) {
+	return &model.FloorPlanResponse{
+		FloorPlan: &model.FloorPlan{
+			ID:          fmt.Sprintf("floorplan_%d", time.Now().Unix()),
+			Title:       input.Title,
+			Route:       input.Route,
+			FloorNumber: input.FloorNumber,
+			Floors:      []*model.FloorPlanFloor{},
+			Markers:     []*model.FloorMarker{},
+		},
+	}, nil
+}
+
+// UpdateFloorPlan is the resolver for the updateFloorPlan field.
+func (r *mutationResolver) UpdateFloorPlan(ctx context.Context, input model.UpdateFloorPlanInput) (*model.FloorPlanResponse, error) {
+	return &model.FloorPlanResponse{
+		FloorPlan: &model.FloorPlan{
+			ID:    input.FloorPlanID,
+			Title: *input.Title,
+			Route: "example-route",
+			Floors: []*model.FloorPlanFloor{},
+			Markers: []*model.FloorMarker{},
+		},
+	}, nil
+}
+
+// AddFloor is the resolver for the addFloor field.
+func (r *mutationResolver) AddFloor(ctx context.Context, input model.AddFloorInput) (*model.FloorResponse, error) {
+	return &model.FloorResponse{
+		Floor: &model.FloorPlanFloor{
+			ID:         fmt.Sprintf("floor_%d", time.Now().Unix()),
+			Number:     input.Number,
+			Name:       input.Name,
+			Markers:    []*model.FloorMarker{},
+			Apartments: []*model.FloorApartment{},
+		},
+	}, nil
+}
+
+// AddFloorMarker is the resolver for the addFloorMarker field.
+func (r *mutationResolver) AddFloorMarker(ctx context.Context, input model.AddFloorMarkerInput) (*model.MarkerResponse, error) {
+	return &model.MarkerResponse{
+		Marker: &model.FloorMarker{
+			ID:   fmt.Sprintf("marker_%d", time.Now().Unix()),
+			Type: input.Type,
+			Position: &model.Position{
+				X: input.Position.X,
+				Y: input.Position.Y,
+			},
+			ApartmentID: input.ApartmentID,
+		},
+	}, nil
+}
+
+// UpdateApartmentStatus is the resolver for the updateApartmentStatus field.
+func (r *mutationResolver) UpdateApartmentStatus(ctx context.Context, input model.UpdateApartmentStatusInput) (*model.ApartmentStatusResponse, error) {
+	lastStatusChange := time.Now().Format("2006-01-02T15:04:05Z07:00")
+	return &model.ApartmentStatusResponse{
+		Apartment: &model.FloorApartment{
+			ID:               input.ApartmentID,
+			Number:           "101", // stub
+			Status:           input.Status,
+			LastStatusChange: &lastStatusChange,
+		},
+	}, nil
+}
+
+// CreatePinMap is the resolver for the createPinMap field.
+func (r *mutationResolver) CreatePinMap(ctx context.Context, input model.CreatePinMapInput) (*model.PinMapResponse, error) {
+	return &model.PinMapResponse{
+		PinMap: &model.PinMap{
+			ID:    fmt.Sprintf("pinmap_%d", time.Now().Unix()),
+			Title: input.Title,
+			Route: input.Route,
+			Pins:  []*model.Pin{},
+		},
+	}, nil
+}
+
+// UpdatePinMap is the resolver for the updatePinMap field.
+func (r *mutationResolver) UpdatePinMap(ctx context.Context, input model.UpdatePinMapInput) (*model.PinMapResponse, error) {
+	return &model.PinMapResponse{
+		PinMap: &model.PinMap{
+			ID:    input.PinMapID,
+			Title: *input.Title,
+			Route: "example-route",
+			Pins:  []*model.Pin{},
+		},
+	}, nil
+}
+
+// AddPin is the resolver for the addPin field.
+func (r *mutationResolver) AddPin(ctx context.Context, input model.AddPinInput) (*model.PinResponse, error) {
+	return &model.PinResponse{
+		Pin: &model.Pin{
+			ID:    fmt.Sprintf("pin_%d", time.Now().Unix()),
+			Type:  input.Type,
+			Label: input.Label,
+			Position: &model.Position{
+				X: input.Position.X,
+				Y: input.Position.Y,
+			},
+			Annotations: []*model.PinAnnotation{},
+		},
+	}, nil
+}
+
+// UpdatePin is the resolver for the updatePin field.
+func (r *mutationResolver) UpdatePin(ctx context.Context, input model.UpdatePinInput) (*model.PinResponse, error) {
+	return &model.PinResponse{
+		Pin: &model.Pin{
+			ID:    input.PinID,
+			Type:  model.PinTypeInfo, // stub
+			Label: *input.Label,
+			Position: &model.Position{
+				X: input.Position.X,
+				Y: input.Position.Y,
+			},
+			Annotations: []*model.PinAnnotation{},
+		},
+	}, nil
+}
+
+// RemovePin is the resolver for the removePin field.
+func (r *mutationResolver) RemovePin(ctx context.Context, pinMapID string, pinID string) (*model.DeleteResponse, error) {
+	return &model.DeleteResponse{
+		Success: true,
+	}, nil
+}
+
+// AddPinAnnotation is the resolver for the addPinAnnotation field.
+func (r *mutationResolver) AddPinAnnotation(ctx context.Context, input model.AddPinAnnotationInput) (*model.AnnotationResponse, error) {
+	createdAt := time.Now().Format("2006-01-02T15:04:05Z07:00")
+	return &model.AnnotationResponse{
+		Annotation: &model.PinAnnotation{
+			ID:        fmt.Sprintf("annotation_%d", time.Now().Unix()),
+			Type:      input.Type,
+			Content:   input.Content,
+			CreatedAt: createdAt,
+			Author:    "system", // stub
+		},
+	}, nil
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*entities.User, error) {
 	// Extrair usuário do contexto
@@ -653,9 +1008,152 @@ func (r *queryResolver) User(ctx context.Context, id string) (*entities.User, er
 	return user, nil
 }
 
+// GetSignedDownloadUrls is the resolver for the getSignedDownloadUrls field.
+func (r *queryResolver) GetSignedDownloadUrls(ctx context.Context, input model.SignedDownloadUrlsInput) (*model.SignedDownloadUrlsResponse, error) {
+	expirationMinutes := 60 // padrão 1 hora
+	if input.ExpirationMinutes != nil {
+		expirationMinutes = *input.ExpirationMinutes
+	}
+	
+	serviceInput := &entities.SignedDownloadURLsInput{
+		RouteID:           input.RouteID,
+		FileIDs:           input.FileIds,
+		ExpirationMinutes: expirationMinutes,
+	}
+	
+	response, err := r.FileService.GetSignedDownloadURLs(ctx, serviceInput)
+	if err != nil {
+		return nil, err
+	}
+	
+	urls := make([]*model.FileDownloadURL, len(response.URLs))
+	for i, url := range response.URLs {
+		urls[i] = &model.FileDownloadURL{
+			FileID:      url.FileID,
+			DownloadURL: url.DownloadURL,
+			ExpiresAt:   url.ExpiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+	}
+	
+	return &model.SignedDownloadUrlsResponse{
+		Urls: urls,
+	}, nil
+}
+
+// GetSyncStatus is the resolver for the getSyncStatus field.
+func (r *queryResolver) GetSyncStatus(ctx context.Context, syncID string) (*model.SyncStatusResponse, error) {
+	return &model.SyncStatusResponse{
+		Status:      model.SyncStatusCompleted,
+		Progress:    &[]float64{1.0}[0],
+		ZipURL:      &[]string{fmt.Sprintf("https://storage.example.com/syncs/%s.zip", syncID)}[0],
+		CompletedAt: &[]string{time.Now().Format("2006-01-02T15:04:05Z07:00")}[0],
+	}, nil
+}
+
+// GetRouteBusinessData is the resolver for the getRouteBusinessData field.
+func (r *queryResolver) GetRouteBusinessData(ctx context.Context, routeID string) (*model.RouteBusinessDataResponse, error) {
+	return &model.RouteBusinessDataResponse{
+		Route: &model.RouteData{
+			ID:           routeID,
+			Name:         "Rota de Exemplo",
+			Description:  &[]string{"Descrição da rota"}[0],
+			LastModified: time.Now().Format("2006-01-02T15:04:05Z07:00"),
+		},
+		Floors:      []*model.FloorData{},
+		Apartments:  []*model.ApartmentData{},
+		Carousels:   []*model.CarouselData{},
+	}, nil
+}
+
+// GetCacheConfiguration is the resolver for the getCacheConfiguration field.
+func (r *queryResolver) GetCacheConfiguration(ctx context.Context) (*model.CacheConfiguration, error) {
+	return &model.CacheConfiguration{
+		MaxFileSize:         10485760, // 10MB
+		AllowedTypes:        []string{"image", "video", "document", "floorplan"},
+		CompressionEnabled:  true,
+		CacheExpiration:     3600, // 1 hora
+	}, nil
+}
+
+// GetMenus is the resolver for the getMenus field.
+func (r *queryResolver) GetMenus(ctx context.Context, routeID string) (*model.MenusResponse, error) {
+	return &model.MenusResponse{
+		Menus: []*model.Menu{
+			{
+				ID:     "menu_1",
+				Title:  "Menu Principal",
+				Type:   model.MenuTypeMain,
+				Route:  "/main",
+				Order:  1,
+				IsActive: true,
+			},
+		},
+	}, nil
+}
+
+// GetImageCarousel is the resolver for the getImageCarousel field.
+func (r *queryResolver) GetImageCarousel(ctx context.Context, carouselID string) (*model.ImageCarouselResponse, error) {
+	return &model.ImageCarouselResponse{
+		Carousel: &model.ImageCarousel{
+			ID:    carouselID,
+			Title: "Carousel de Exemplo",
+			Route: "/carousel",
+			Items: []*model.CarouselItem{},
+			CreatedAt: time.Now().AddDate(0, -1, 0).Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt: time.Now().Format("2006-01-02T15:04:05Z07:00"),
+		},
+	}, nil
+}
+
+// GetFloorPlan is the resolver for the getFloorPlan field.
+func (r *queryResolver) GetFloorPlan(ctx context.Context, floorPlanID string) (*model.FloorPlanResponse, error) {
+	return &model.FloorPlanResponse{
+		FloorPlan: &model.FloorPlan{
+			ID:    floorPlanID,
+			Title: "Planta Exemplo",
+			Route: "/floorplan",
+			Floors: []*model.FloorPlanFloor{},
+			Markers: []*model.FloorMarker{},
+		},
+	}, nil
+}
+
+// GetApartmentAvailability is the resolver for the getApartmentAvailability field.
+func (r *queryResolver) GetApartmentAvailability(ctx context.Context, floorPlanID string) (*model.ApartmentAvailabilityResponse, error) {
+	return &model.ApartmentAvailabilityResponse{
+		Summary: &model.AvailabilitySummary{
+			Total:     50,
+			Available: 25,
+			Sold:      20,
+			Reserved:  3,
+			Blocked:   2,
+		},
+		Apartments: []*model.FloorApartment{},
+	}, nil
+}
+
+// GetPinMap is the resolver for the getPinMap field.
+func (r *queryResolver) GetPinMap(ctx context.Context, pinMapID string) (*model.PinMapResponse, error) {
+	return &model.PinMapResponse{
+		PinMap: &model.PinMap{
+			ID:    pinMapID,
+			Title: "Mapa de Pins Exemplo",
+			Route: "/pinmap",
+			Pins:  []*model.Pin{},
+		},
+	}, nil
+}
+
+// SearchPins is the resolver for the searchPins field.
+func (r *queryResolver) SearchPins(ctx context.Context, input model.SearchPinsInput) (*model.SearchPinsResponse, error) {
+	return &model.SearchPinsResponse{
+		Pins: []*model.SearchPinResult{},
+	}, nil
+}
+
 // Fields is the resolver for the fields field.
 func (r *signedUploadUrlResolver) Fields(ctx context.Context, obj *entities.SignedUploadURL) (*string, error) {
-	panic(fmt.Errorf("not implemented: Fields - fields"))
+	return nil, nil // Opcional
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -672,3 +1170,31 @@ func (r *Resolver) SignedUploadUrl() generated.SignedUploadUrlResolver {
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type signedUploadUrlResolver struct{ *Resolver }
+
+// convertFileContext converte o modelo GraphQL para a entidade
+func convertFileContext(ctx *model.FileContextInput) *entities.FileContextInput {
+	if ctx == nil {
+		return nil
+	}
+	
+	var coords *entities.CoordinatesInput
+	if ctx.Coordinates != nil {
+		coords = &entities.CoordinatesInput{
+			Latitude:  ctx.Coordinates.Latitude,
+			Longitude: ctx.Coordinates.Longitude,
+		}
+	}
+	
+	return &entities.FileContextInput{
+		PinID:       ctx.PinID,
+		Coordinates: coords,
+		FloorID:     ctx.FloorID,
+		FloorNumber: ctx.FloorNumber,
+		IsReference: ctx.IsReference,
+		CarouselID:  ctx.CarouselID,
+		Order:       ctx.Order,
+		Title:       ctx.Title,
+		Description: ctx.Description,
+		Tags:        ctx.Tags,
+	}
+}

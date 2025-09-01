@@ -2,6 +2,7 @@
 scalar Time
 scalar JSON
 scalar Upload
+scalar DateTime
 
 type Query {
   # Authentication (Autenticação) - PÚBLICO
@@ -39,6 +40,24 @@ type Query {
   # User Management (ADMIN APENAS)
   users: [User!]!                                      # lista todos os usuários
   user(id: ID!): User                                  # busca usuário por ID
+  
+  # File Download Management
+  getSignedDownloadUrls(input: SignedDownloadUrlsInput!): SignedDownloadUrlsResponse!
+  getSyncStatus(syncId: String!): SyncStatusResponse!
+  
+  # Business Data Sync
+  getRouteBusinessData(routeId: String!): RouteBusinessDataResponse!
+  getCacheConfiguration: CacheConfiguration!
+  
+  # Menu Navigation
+  getMenus(routeId: String!): MenusResponse!
+  
+  # Presentations
+  getImageCarousel(carouselId: String!): ImageCarouselResponse!
+  getFloorPlan(floorPlanId: String!): FloorPlanResponse!
+  getApartmentAvailability(floorPlanId: String!): ApartmentAvailabilityResponse!
+  getPinMap(pinMapId: String!): PinMapResponse!
+  searchPins(input: SearchPinsInput!): SearchPinsResponse!
 }
 
 type Mutation {
@@ -84,6 +103,42 @@ type Mutation {
   
   # Configuration (Configurações)
   updateAppConfig(logoUrl: String, apiBaseUrl: String, cacheControlMaxAge: Int): AppConfig! # atualizar configurações
+  
+  # File Upload Management  
+  getSignedUploadUrl(input: SignedUploadUrlInput!): SignedUploadUrlResponse!
+  confirmFileUpload(input: ConfirmFileUploadInput!): ConfirmFileUploadResponse!
+  
+  # Offline Sync
+  requestFullSync(input: FullSyncInput!): FullSyncResponse!
+  updateSyncMetadata(input: SyncMetadataInput!): UpdateSyncMetadataResponse!
+  updateRouteBusinessData(input: RouteBusinessDataInput!): UpdateRouteBusinessDataResponse!
+  
+  # Menu Management
+  createMenu(input: CreateMenuInput!): MenuResponse!
+  updateMenu(input: UpdateMenuInput!): MenuResponse!
+  deleteMenu(menuId: String!): DeleteResponse!
+  
+  # Image Carousel Management
+  createImageCarousel(input: CreateImageCarouselInput!): ImageCarouselResponse!
+  updateImageCarousel(input: UpdateImageCarouselInput!): ImageCarouselResponse!
+  addCarouselItem(input: AddCarouselItemInput!): CarouselItemResponse!
+  removeCarouselItem(carouselId: String!, itemId: String!): DeleteResponse!
+  reorderCarouselItems(input: ReorderCarouselItemsInput!): ReorderResponse!
+  
+  # Floor Plan Management
+  createFloorPlan(input: CreateFloorPlanInput!): FloorPlanResponse!
+  updateFloorPlan(input: UpdateFloorPlanInput!): FloorPlanResponse!
+  addFloor(input: AddFloorInput!): FloorResponse!
+  addFloorMarker(input: AddFloorMarkerInput!): MarkerResponse!
+  updateApartmentStatus(input: UpdateApartmentStatusInput!): ApartmentStatusResponse!
+  
+  # Pin Map Management
+  createPinMap(input: CreatePinMapInput!): PinMapResponse!
+  updatePinMap(input: UpdatePinMapInput!): PinMapResponse!
+  addPin(input: AddPinInput!): PinResponse!
+  updatePin(input: UpdatePinInput!): PinResponse!
+  removePin(pinMapId: String!, pinId: String!): DeleteResponse!
+  addPinAnnotation(input: AddPinAnnotationInput!): AnnotationResponse!
 }
 
 # Building/Tower (Torre)
@@ -381,4 +436,796 @@ input ChangePasswordInput {
   userId: ID                 # ID do usuário (opcional - se não fornecido, altera própria senha)
   oldPassword: String        # senha atual (obrigatória se alterando própria senha)
   newPassword: String!       # nova senha
+}
+
+# ==========================================
+# FILE UPLOAD/DOWNLOAD TYPES
+# ==========================================
+
+input SignedUploadUrlInput {
+  fileName: String!
+  fileType: String!
+  contentType: String!
+  routeId: String!
+  context: FileContextInput!
+}
+
+input FileContextInput {
+  pinId: String
+  coordinates: CoordinatesInput
+  floorId: String
+  floorNumber: String
+  isReference: Boolean
+  carouselId: String
+  order: Int
+  title: String
+  description: String
+  tags: [String!]
+}
+
+input CoordinatesInput {
+  latitude: Float!
+  longitude: Float!
+}
+
+type SignedUploadUrlResponse {
+  uploadUrl: String!
+  minioPath: String!
+  expiresAt: DateTime!
+  fileId: String!
+}
+
+input ConfirmFileUploadInput {
+  fileId: String!
+  minioPath: String!
+  routeId: String!
+  originalFileName: String!
+  fileSize: Int!
+  checksum: String!
+  context: FileContextInput!
+}
+
+type ConfirmFileUploadResponse {
+  success: Boolean!
+  fileMetadata: FileMetadataExtended
+}
+
+type FileMetadataExtended {
+  id: String!
+  url: String!
+  downloadUrl: String
+  thumbnailUrl: String
+  metadata: JSON
+}
+
+input SignedDownloadUrlsInput {
+  routeId: String!
+  fileIds: [String!]!
+  expirationMinutes: Int
+}
+
+type FileDownloadUrl {
+  fileId: String!
+  downloadUrl: String!
+  expiresAt: DateTime!
+}
+
+type SignedDownloadUrlsResponse {
+  urls: [FileDownloadUrl!]!
+}
+
+# ==========================================
+# OFFLINE SYNC TYPES
+# ==========================================
+
+input FullSyncInput {
+  routeId: String!
+  includeTypes: [String!]
+  compressionLevel: Int
+  maxFileSize: Int
+}
+
+type FullSyncResponse {
+  zipUrl: String!
+  expiresAt: DateTime!
+  totalFiles: Int!
+  estimatedSize: Int!
+  syncId: String!
+}
+
+enum SyncStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+type SyncStatusResponse {
+  status: SyncStatus!
+  progress: Float
+  zipUrl: String
+  error: String
+  completedAt: DateTime
+}
+
+input SyncMetadataInput {
+  routeId: String!
+  clientTimestamp: DateTime!
+  syncedFiles: [String!]!
+  version: String!
+}
+
+type UpdateSyncMetadataResponse {
+  success: Boolean!
+  serverTimestamp: DateTime
+}
+
+# ==========================================
+# BUSINESS DATA SYNC TYPES
+# ==========================================
+
+type RouteBusinessDataResponse {
+  route: RouteData
+  floors: [FloorData!]
+  apartments: [ApartmentData!]
+  carousels: [CarouselData!]
+  businessRules: BusinessRules
+}
+
+type RouteData {
+  id: String!
+  name: String!
+  description: String
+  settings: JSON
+  lastModified: DateTime!
+}
+
+type FloorData {
+  id: String!
+  number: String!
+  name: String!
+  planUrl: String
+  markers: [MarkerData!]
+}
+
+type MarkerData {
+  id: String!
+  type: String!
+  coordinates: JSON
+  data: JSON
+}
+
+type ApartmentData {
+  id: String!
+  number: String!
+  floor: String!
+  status: String!
+  specifications: JSON
+  images: [String!]
+  videos: [String!]
+}
+
+type CarouselData {
+  id: String!
+  title: String!
+  description: String
+  items: [CarouselItemData!]
+}
+
+type CarouselItemData {
+  id: String!
+  type: String!
+  url: String!
+  order: Int!
+  metadata: JSON
+}
+
+type BusinessRules {
+  pricing: JSON
+  availability: JSON
+  restrictions: JSON
+  customFields: JSON
+}
+
+input RouteBusinessDataInput {
+  routeId: String!
+  lastModified: DateTime!
+  floors: [FloorDataInput!]
+  apartments: [ApartmentDataInput!]
+  carousels: [CarouselDataInput!]
+  businessRules: BusinessRulesInput
+}
+
+input FloorDataInput {
+  id: String
+  number: String!
+  name: String!
+  planUrl: String
+}
+
+input ApartmentDataInput {
+  id: String
+  number: String!
+  floor: String!
+  status: String!
+  specifications: JSON
+}
+
+input CarouselDataInput {
+  id: String
+  title: String!
+  description: String
+}
+
+input BusinessRulesInput {
+  pricing: JSON
+  availability: JSON
+  restrictions: JSON
+  customFields: JSON
+}
+
+type UpdateRouteBusinessDataResponse {
+  success: Boolean!
+  lastModified: DateTime
+  conflicts: [ConflictData!]
+}
+
+type ConflictData {
+  field: String!
+  serverValue: JSON
+  clientValue: JSON
+  resolution: String
+}
+
+type CacheConfiguration {
+  maxFileSize: Int!
+  allowedTypes: [String!]!
+  compressionEnabled: Boolean!
+  thumbnailSizes: JSON
+  cacheExpiration: Int!
+  syncIntervals: JSON
+}
+
+# ==========================================
+# MENU NAVIGATION TYPES
+# ==========================================
+
+input CreateMenuInput {
+  title: String!
+  type: MenuType!
+  route: String!
+  icon: String
+  parentId: String
+  order: Int!
+  permissions: [String!]
+  metadata: JSON
+}
+
+input UpdateMenuInput {
+  menuId: String!
+  title: String
+  route: String
+  icon: String
+  order: Int
+  isActive: Boolean
+  permissions: [String!]
+  metadata: JSON
+}
+
+enum MenuType {
+  MAIN
+  SUB
+  ACTION
+  DIVIDER
+}
+
+type Menu {
+  id: String!
+  title: String!
+  type: MenuType!
+  route: String!
+  icon: String
+  order: Int!
+  isActive: Boolean!
+  permissions: [String!]
+  children: [Menu!]
+}
+
+type MenuResponse {
+  menu: Menu!
+}
+
+type MenusResponse {
+  menus: [Menu!]!
+}
+
+# ==========================================
+# IMAGE CAROUSEL TYPES
+# ==========================================
+
+input CreateImageCarouselInput {
+  title: String!
+  route: String!
+  description: String
+  items: [CarouselItemInput!]
+  settings: CarouselSettingsInput
+}
+
+input UpdateImageCarouselInput {
+  carouselId: String!
+  title: String
+  description: String
+  settings: CarouselSettingsInput
+}
+
+input AddCarouselItemInput {
+  carouselId: String!
+  type: CarouselItemType!
+  fileId: String
+  url: String
+  caption: String
+  order: Int!
+  metadata: CarouselItemMetadataInput
+}
+
+input CarouselItemInput {
+  type: CarouselItemType!
+  fileId: String
+  url: String
+  caption: String
+  order: Int!
+  metadata: CarouselItemMetadataInput
+}
+
+input CarouselItemMetadataInput {
+  width: Int
+  height: Int
+  thumbnailUrl: String
+  duration: Int
+  posterUrl: String
+  latitude: Float
+  longitude: Float
+  zoom: Int
+  mapType: String
+  overlayText: String
+  overlayPosition: String
+}
+
+input CarouselSettingsInput {
+  autoPlay: Boolean
+  autoPlayInterval: Int
+  showIndicators: Boolean
+  showControls: Boolean
+  enableZoom: Boolean
+  enableFullscreen: Boolean
+  transition: String
+  aspectRatio: String
+}
+
+input ReorderCarouselItemsInput {
+  carouselId: String!
+  itemOrders: [ItemOrderInput!]!
+}
+
+input ItemOrderInput {
+  itemId: String!
+  order: Int!
+}
+
+enum CarouselItemType {
+  IMAGE
+  VIDEO
+  MAP
+  TEXT_OVERLAY
+}
+
+type ImageCarousel {
+  id: String!
+  title: String!
+  description: String
+  route: String!
+  items: [CarouselItem!]!
+  settings: CarouselSettings
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CarouselItem {
+  id: String!
+  type: CarouselItemType!
+  url: String!
+  order: Int!
+  caption: String
+  metadata: JSON
+}
+
+type CarouselSettings {
+  autoPlay: Boolean
+  autoPlayInterval: Int
+  showIndicators: Boolean
+  showControls: Boolean
+  enableZoom: Boolean
+  enableFullscreen: Boolean
+  transition: String
+  aspectRatio: String
+}
+
+type ImageCarouselResponse {
+  carousel: ImageCarousel!
+}
+
+type CarouselItemResponse {
+  item: CarouselItem!
+}
+
+type ReorderResponse {
+  success: Boolean!
+  items: [CarouselItem!]
+}
+
+# ==========================================
+# FLOOR PLAN TYPES
+# ==========================================
+
+input CreateFloorPlanInput {
+  title: String!
+  route: String!
+  floorNumber: String
+  description: String
+  floors: [FloorInput!]
+}
+
+input UpdateFloorPlanInput {
+  floorPlanId: String!
+  title: String
+  description: String
+}
+
+input AddFloorInput {
+  floorPlanId: String!
+  number: String!
+  name: String!
+  planImageFileId: String
+  referenceImageIds: [String!]
+  apartments: [ApartmentInput!]
+}
+
+input FloorInput {
+  number: String!
+  name: String!
+  planImageFileId: String
+  apartments: [ApartmentInput!]
+}
+
+input ApartmentInput {
+  number: String!
+  status: ApartmentStatusExtended!
+  area: Float
+  bedrooms: Int
+  bathrooms: Int
+  price: Float
+  sunPosition: SunPosition
+  features: [String!]
+  customFields: JSON
+}
+
+input AddFloorMarkerInput {
+  floorId: String!
+  type: MarkerType!
+  position: PositionInput!
+  apartmentId: String
+  label: String
+  color: String
+  metadata: JSON
+}
+
+input PositionInput {
+  x: Float!
+  y: Float!
+}
+
+input UpdateApartmentStatusInput {
+  apartmentId: String!
+  status: ApartmentStatusExtended!
+  reason: String
+  effectiveDate: DateTime
+}
+
+enum ApartmentStatusExtended {
+  AVAILABLE
+  SOLD
+  RESERVED
+  BLOCKED
+  UNDER_NEGOTIATION
+}
+
+enum MarkerType {
+  APARTMENT
+  ELEVATOR
+  STAIRS
+  EMERGENCY_EXIT
+  BATHROOM
+  UTILITY
+  CUSTOM
+}
+
+enum SunPosition {
+  NORTH
+  SOUTH
+  EAST
+  WEST
+  NORTHEAST
+  NORTHWEST
+  SOUTHEAST
+  SOUTHWEST
+  ALL_DAY
+}
+
+type FloorPlan {
+  id: String!
+  title: String!
+  route: String!
+  floorNumber: String
+  description: String
+  planImageUrl: String
+  floors: [FloorPlanFloor!]
+  markers: [FloorMarker!]
+}
+
+type FloorPlanFloor {
+  id: String!
+  number: String!
+  name: String!
+  imageUrl: String
+  planImageUrl: String
+  referenceImages: [String!]
+  markers: [FloorMarker!]
+  apartments: [FloorApartment!]
+}
+
+type FloorMarker {
+  id: String!
+  type: MarkerType!
+  position: Position!
+  apartmentId: String
+  metadata: JSON
+}
+
+type Position {
+  x: Float!
+  y: Float!
+}
+
+type FloorApartment {
+  id: String!
+  number: String!
+  status: ApartmentStatusExtended!
+  area: Float
+  bedrooms: Int
+  bathrooms: Int
+  price: Float
+  sunPosition: SunPosition
+  features: [String!]
+  lastStatusChange: DateTime
+}
+
+type FloorPlanResponse {
+  floorPlan: FloorPlan!
+}
+
+type FloorResponse {
+  floor: FloorPlanFloor!
+}
+
+type MarkerResponse {
+  marker: FloorMarker!
+}
+
+type ApartmentStatusResponse {
+  apartment: FloorApartment!
+}
+
+type ApartmentAvailabilityResponse {
+  summary: AvailabilitySummary!
+  apartments: [FloorApartment!]!
+}
+
+type AvailabilitySummary {
+  total: Int!
+  available: Int!
+  sold: Int!
+  reserved: Int!
+  blocked: Int!
+}
+
+# ==========================================
+# PIN MAP TYPES
+# ==========================================
+
+input CreatePinMapInput {
+  title: String!
+  route: String!
+  description: String
+  backgroundImageId: String
+  initialZoom: Float
+  centerPosition: PositionInput
+  pins: [PinInput!]
+}
+
+input UpdatePinMapInput {
+  pinMapId: String!
+  title: String
+  description: String
+  backgroundImageId: String
+  zoom: Float
+  centerPosition: PositionInput
+}
+
+input AddPinInput {
+  pinMapId: String!
+  type: PinType!
+  position: PositionInput!
+  label: String!
+  description: String
+  icon: String
+  color: String
+  size: PinSize
+  metadata: PinMetadataInput
+}
+
+input PinInput {
+  type: PinType!
+  position: PositionInput!
+  label: String!
+  description: String
+  icon: String
+  color: String
+  size: PinSize
+  metadata: PinMetadataInput
+}
+
+input UpdatePinInput {
+  pinId: String!
+  position: PositionInput
+  label: String
+  description: String
+  icon: String
+  color: String
+  size: PinSize
+  metadata: PinMetadataInput
+}
+
+input PinMetadataInput {
+  imageIds: [String!]
+  videoId: String
+  category: String
+  tags: [String!]
+  customFields: JSON
+  clickAction: String
+  tooltip: String
+  infoWindow: InfoWindowInput
+}
+
+input InfoWindowInput {
+  title: String
+  content: String
+  imageUrl: String
+  actions: [ActionButtonInput!]
+}
+
+input ActionButtonInput {
+  label: String!
+  action: String!
+  style: String
+}
+
+input AddPinAnnotationInput {
+  pinId: String!
+  type: AnnotationType!
+  content: String!
+  visibility: Visibility
+}
+
+enum PinType {
+  LOCATION
+  INFO
+  WARNING
+  HIGHLIGHT
+  CUSTOM
+}
+
+enum PinSize {
+  SMALL
+  MEDIUM
+  LARGE
+  EXTRA_LARGE
+}
+
+enum AnnotationType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  LINK
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+  TEAM
+  RESTRICTED
+}
+
+type PinMap {
+  id: String!
+  title: String!
+  route: String!
+  description: String
+  backgroundImageUrl: String
+  zoom: Float
+  centerPosition: Position
+  pins: [Pin!]!
+}
+
+type Pin {
+  id: String!
+  type: PinType!
+  position: Position!
+  label: String!
+  description: String
+  icon: String
+  color: String
+  size: PinSize
+  metadata: JSON
+  annotations: [PinAnnotation!]
+}
+
+type PinAnnotation {
+  id: String!
+  type: AnnotationType!
+  content: String!
+  createdAt: DateTime!
+  author: String!
+}
+
+type PinMapResponse {
+  pinMap: PinMap!
+}
+
+type PinResponse {
+  pin: Pin!
+}
+
+type AnnotationResponse {
+  annotation: PinAnnotation!
+}
+
+type SearchPinsResponse {
+  pins: [SearchPinResult!]!
+}
+
+type SearchPinResult {
+  id: String!
+  label: String!
+  description: String
+  position: Position!
+  pinMapId: String!
+  pinMapTitle: String!
+}
+
+input SearchPinsInput {
+  query: String!
+  pinMapId: String
+  types: [PinType!]
+  tags: [String!]
+  limit: Int
+}
+
+# ==========================================
+# COMMON RESPONSE TYPES
+# ==========================================
+
+type DeleteResponse {
+  success: Boolean!
 }

@@ -2,6 +2,7 @@ package graph
 
 import (
 	"api/domain/interfaces"
+	"api/domain/services"
 	"api/infra/storage"
 )
 
@@ -21,4 +22,5 @@ type Resolver struct {
 	AuthService          interfaces.AuthService
 	StorageService       interfaces.StorageService
 	BulkDownloadService  *storage.BulkDownloadService
+	FileService          *services.FileService
 }
