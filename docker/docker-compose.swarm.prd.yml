@@ -67,10 +67,6 @@ services:
         # 🔧 CORREÇÃO: Rede correta
         - "traefik.docker.network=TerraAllWertNet"
         - "traefik.docker.lbswarm=true"
-        
-        # 🔧 Health check para Traefik
-        - "traefik.http.services.TerraAllWertApp-prd.loadbalancer.healthcheck.path=/api/health"
-        - "traefik.http.services.TerraAllWertApp-prd.loadbalancer.healthcheck.interval=30s"
 
     networks:
       - TerraAllWertApp
@@ -91,6 +87,7 @@ services:
       - postgres_prd_backups:/backups
     networks:
       - TerraAllWertApp
+      - TerraAllWertNet
     deploy:
       restart_policy:
         condition: on-failure
@@ -101,6 +98,19 @@ services:
         reservations:
           cpus: "0.2"
           memory: 256M
+      labels:
+        # 🛡️ Habilita Traefik para acesso externo ao banco (CUIDADO - apenas para desenvolvimento)
+        - "traefik.enable=true"
+        
+        # 🌐 Rota para acesso ao PostgreSQL via pgAdmin ou cliente externo
+        - "traefik.tcp.routers.terra-allwert-db.rule=HostSNI(`db.terra-allwert.online`)"
+        - "traefik.tcp.routers.terra-allwert-db.entrypoints=postgres"
+        - "traefik.tcp.services.terra-allwert-db.loadbalancer.server.port=5432"
+        - "traefik.docker.network=TerraAllWertNet"
+        
+        # ⚠️ IMPORTANTE: Descomente apenas se precisar de acesso externo ao banco
+        # Em produção, recomenda-se usar conexão via túnel SSH ou VPN
+        # - "traefik.tcp.routers.terra-allwert-db.tls=true"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 30s
@@ -167,14 +177,26 @@ services:
           cpus: "0.1"
           memory: 128M
       labels:
-        # MinIO Console via Traefik
+        # 🛡️ Habilita Traefik para MinIO
         - "traefik.enable=true"
-        - "traefik.http.routers.terra-allwert-minio-console.rule=Host(`terra-allwert.online`) && PathPrefix(`/minio-console`)"
+        
+        # 🌐 MinIO API (S3-compatible) - Subdomínio dedicado
+        - "traefik.http.routers.terra-allwert-minio-api.rule=Host(`minio.terra-allwert.online`)"
+        - "traefik.http.routers.terra-allwert-minio-api.entrypoints=web"
+        - "traefik.http.services.terra-allwert-minio-api.loadbalancer.server.port=9000"
+        - "traefik.http.routers.terra-allwert-minio-api.service=terra-allwert-minio-api"
+        
+        # 🎛️ MinIO Console - Interface administrativa
+        - "traefik.http.routers.terra-allwert-minio-console.rule=Host(`minio.terra-allwert.online`) && PathPrefix(`/console`)"
         - "traefik.http.routers.terra-allwert-minio-console.entrypoints=web"
         - "traefik.http.services.terra-allwert-minio-console.loadbalancer.server.port=9001"
-        - "traefik.http.middlewares.terra-allwert-minio-console-strip.stripprefix.prefixes=/minio-console"
+        - "traefik.http.middlewares.terra-allwert-minio-console-strip.stripprefix.prefixes=/console"
         - "traefik.http.routers.terra-allwert-minio-console.middlewares=terra-allwert-minio-console-strip"
+        - "traefik.http.routers.terra-allwert-minio-console.service=terra-allwert-minio-console"
+        
+        # 🔧 Configurações de rede
         - "traefik.docker.network=TerraAllWertNet"
+        - "traefik.docker.lbswarm=true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s

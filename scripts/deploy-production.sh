@@ -71,6 +71,17 @@ if ! docker network ls --format '{{.Name}}' | grep -q "^TerraAllWertNet$"; then
     docker network create -d overlay --attachable TerraAllWertNet
 fi
 
+# Deploy do Traefik primeiro (se o arquivo existe)
+if [ -f "docker/docker-compose.traefik.yml" ]; then
+    echo -e "${BLUE}🛡️ Fazendo deploy do Traefik...${NC}"
+    docker stack deploy \
+        --compose-file docker/docker-compose.traefik.yml \
+        traefik
+    
+    echo -e "${YELLOW}⏳ Aguardando Traefik inicializar...${NC}"
+    sleep 15
+fi
+
 # Build da imagem da API
 echo -e "${BLUE}🏗️  Construindo imagem da API...${NC}"
 cd "$PROJECT_DIR"
@@ -100,8 +111,17 @@ docker service logs --tail 20 terra-allwert-prd_prd-api
 echo ""
 echo -e "${GREEN}🎉 Deploy de produção concluído!${NC}"
 echo -e "${BLUE}📡 Serviços disponíveis:${NC}"
-echo "   • API: http://app.terra-allwert.online"
-echo "   • MinIO Console: http://app.terra-allwert.online/minio-console"
+echo "   • API Principal: https://terra-allwert.online"
+echo "   • MinIO API (S3): https://minio.terra-allwert.online"
+echo "   • MinIO Console: https://minio.terra-allwert.online/console"
+echo "   • Traefik Dashboard: https://traefik.terra-allwert.online"
+echo "   • PostgreSQL: db.terra-allwert.online:5432 (via túnel SSH recomendado)"
+echo ""
+echo -e "${YELLOW}🔒 Configuração DNS necessária:${NC}"
+echo "   • terra-allwert.online → IP da VPS"
+echo "   • minio.terra-allwert.online → IP da VPS"  
+echo "   • db.terra-allwert.online → IP da VPS"
+echo "   • traefik.terra-allwert.online → IP da VPS"
 echo ""
 echo -e "${YELLOW}📋 Comandos úteis:${NC}"
 echo "   • Ver serviços: docker service ls"
