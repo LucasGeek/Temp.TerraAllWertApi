@@ -58,7 +58,9 @@ services:
 
         # 🌐 Define a rota HTTP para o IP direto (sem DNS/SSL)
         - "traefik.http.routers.TerraAllWertApp-prd.rule=Host(`terra-allwert.online`)"
-        - "traefik.http.routers.TerraAllWertApp-prd.entrypoints=web"
+        - "traefik.http.routers.TerraAllWertApp-prd.entrypoints=websecure"
+        - "traefik.http.routers.TerraAllWertApp-prd.tls=true"
+        - "traefik.http.routers.TerraAllWertApp-prd.tls.certresolver=letsencryptresolver"
         
         # 🔧 CORREÇÃO: Service e porta
         - "traefik.http.services.TerraAllWertApp-prd.loadbalancer.server.port=3000"
@@ -67,6 +69,10 @@ services:
         # 🔧 CORREÇÃO: Rede correta
         - "traefik.docker.network=TerraAllWertNet"
         - "traefik.docker.lbswarm=true"
+
+        # 🔧 Health check para Traefik
+        - "traefik.http.services.moedax-stg.loadbalancer.healthcheck.path=/api/v1/health"
+        - "traefik.http.services.moedax-stg.loadbalancer.healthcheck.interval=30s"
 
     networks:
       - TerraAllWertApp
@@ -142,9 +148,6 @@ services:
         limits:
           cpus: "0.3"
           memory: 256M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -173,9 +176,6 @@ services:
         limits:
           cpus: "0.3"
           memory: 256M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
       labels:
         # 🛡️ Habilita Traefik para MinIO
         - "traefik.enable=true"
