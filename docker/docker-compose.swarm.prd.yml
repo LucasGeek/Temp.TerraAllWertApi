@@ -52,15 +52,12 @@ services:
         limits:
           cpus: "0.5"        # 🔧 LIMITE: 0.5 CPUs (maior para produção)
           memory: 512M       # 🔧 LIMITE: 512MB (maior para produção)
-        reservations:
-          cpus: "0.2"        # 🔧 RESERVA: 0.2 CPUs garantidos
-          memory: 256M       # 🔧 RESERVA: 256MB garantidos
       labels:
         # 🛡️ Habilita Traefik
         - "traefik.enable=true"
 
         # 🌐 Define a rota HTTP para o IP direto (sem DNS/SSL)
-        - "traefik.http.routers.TerraAllWertApp-prd.rule=Host(`app.terra-allwert.online`)"
+        - "traefik.http.routers.TerraAllWertApp-prd.rule=Host(`terra-allwert.online`)"
         - "traefik.http.routers.TerraAllWertApp-prd.entrypoints=web"
         
         # 🔧 CORREÇÃO: Service e porta
@@ -172,7 +169,7 @@ services:
       labels:
         # MinIO Console via Traefik
         - "traefik.enable=true"
-        - "traefik.http.routers.terra-allwert-minio-console.rule=Host(`app.terra-allwert.online`) && PathPrefix(`/minio-console`)"
+        - "traefik.http.routers.terra-allwert-minio-console.rule=Host(`terra-allwert.online`) && PathPrefix(`/minio-console`)"
         - "traefik.http.routers.terra-allwert-minio-console.entrypoints=web"
         - "traefik.http.services.terra-allwert-minio-console.loadbalancer.server.port=9001"
         - "traefik.http.middlewares.terra-allwert-minio-console-strip.stripprefix.prefixes=/minio-console"
