@@ -30,7 +30,7 @@ api/
 ├── src/              # Módulo principal da aplicação
 │   ├── go.mod        # Dependências da aplicação
 │   ├── main.go       # Entry point
-│   ├── api/handlers/ # HTTP handlers (ÚNICA pasta para handlers)
+│   ├── api/handlers/ # HTTP handlers
 │   ├── domain/       # Entidades e interfaces
 │   ├── data/         # Repositórios e implementações
 │   ├── infra/        # Infraestrutura (auth, middleware, storage)
@@ -50,25 +50,6 @@ api/
 - Refresh tokens
 - Roles: Admin, Consultant, Client
 - Middleware de autenticação
-
-### Gestão de Torres
-- CRUD completo de torres
-- Upload de imagens e documentos
-- Informações de localização
-- Estatísticas de ocupação
-
-### Gestão de Pavimentos
-- Pavimentos por torre
-- Plantas baixas
-- Configuração de apartamentos
-
-### Gestão de Apartamentos
-- Tipos: Studio, 1-3 quartos, Cobertura
-- Status: Disponível, Reservado, Vendido
-- Características e amenidades
-- Galeria de imagens
-- Vídeos promocionais
-- Tour virtual 360°
 
 ### Sistema de Cache
 - Cache Redis para queries frequentes
@@ -93,20 +74,106 @@ api/
 
 ```bash
 # Desenvolvimento
-go run main.go
+go run src/main.go
 
 # Build
-go build -o bin/api main.go
+go build -o bin/api src/main.go
 
 # Testes
 go test ./...
 
-# Migrações
-go run cmd/migrate/main.go up
+# Seeding manual (opcional - executado automaticamente no primeiro start)
+go run src/cmd/seed/main.go
 
-# Gerar código GraphQL
+# Gerar código GraphQL (se usando GraphQL)
 go run github.com/99designs/gqlgen generate
 ```
+
+## Inicialização Automática
+
+A API detecta automaticamente se o banco de dados está vazio no primeiro startup e executa:
+
+1. **Auto-migrations**: Criação automática das tabelas
+2. **Auto-seeding**: População inicial com dados essenciais:
+   - Empresa padrão "Terra Allwert"
+   - Usuários básicos (admin, manager, visitor)
+   - Dados de demonstração
+
+**Usuários criados automaticamente:**
+- `admin@terra.com` / `senha123` (Super Admin)
+- `admin@allwert` / `senha123` (Admin da Empresa)
+- `manager@allwert` / `senha123` (Manager)
+- `visitor@allwert` / `senha123` (Visitor)
+- `demo@terraallwert.com` / `senha123` (Demo User)
+
+### Controle do Seeding
+
+O seeding automático só é executado quando:
+- Não existem enterprises no banco
+- Não existem users no banco
+
+Para forçar re-seeding:
+1. Limpe o banco de dados
+2. Reinicie a aplicação
+
+## Deploy em Produção
+
+### Configuração do Ambiente de Produção
+
+1. **Copie o arquivo de exemplo**:
+```bash
+cp .env.prd.example .env.prd
+```
+
+2. **Configure as variáveis de produção**:
+```bash
+# Edite o arquivo .env.prd com dados reais
+nano .env.prd
+```
+
+3. **Execute o deploy**:
+```bash
+./scripts/deploy-production.sh
+```
+
+### Estrutura do Ambiente de Produção
+
+O ambiente de produção usa Docker Swarm com os seguintes serviços:
+
+- **API**: `terra-allwert-prd_prd-api` (2 réplicas)
+- **PostgreSQL**: `terra-allwert-prd_prd-db` 
+- **Redis**: `terra-allwert-prd_prd-cache`
+- **MinIO**: `terra-allwert-prd_prd-minio`
+
+### Comandos de Produção
+
+```bash
+# Ver status dos serviços
+docker service ls
+
+# Ver logs da API
+docker service logs -f terra-allwert-prd_prd-api
+
+# Escalar API para 3 réplicas
+docker service scale terra-allwert-prd_prd-api=3
+
+# Remover stack completo
+docker stack rm terra-allwert-prd
+
+# Backup do banco
+docker exec $(docker ps -q -f name=terra-allwert-prd_prd-db) \
+  pg_dump -U $DB_USER $DB_NAME > backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+### Segurança em Produção
+
+- ✅ Senhas fortes e únicas para todos os serviços
+- ✅ JWT Secret com 64+ caracteres
+- ✅ Logs estruturados em JSON
+- ⚠️  Configure SSL/TLS com certificados válidos
+- ⚠️  Configure firewall e regras de rede
+- ⚠️  Implemente monitoramento e alertas
+- ⚠️  Configure backups automáticos
 
 ## Variáveis de Ambiente
 
@@ -142,15 +209,6 @@ JWT_SECRET=your-secret-key
 JWT_EXPIRATION_HOURS=24
 ```
 
-## Melhorias Planejadas
-
-1. **Segurança**: Implementar rate limiting e proteção DDoS
-2. **Performance**: Otimização de queries N+1
-3. **Testes**: Aumentar cobertura para 80%+
-4. **Documentação**: Swagger/OpenAPI completo
-5. **Monitoramento**: Integração com Prometheus/Grafana
-6. **CI/CD**: Pipeline automatizado com GitHub Actions
-
 ## Problemas Conhecidos do Projeto Legado
 
 - Credenciais hardcoded no código
@@ -171,14 +229,6 @@ Para dúvidas ou sugestões sobre este projeto, consulte a documentação comple
 - [ ] Esta é a solução mais simples que resolve o problema?
 - [ ] Esta abstração é realmente necessária agora?
 - [ ] Este padrão de design agrega valor imediato?
-
-## RED FLAGS - Pare e Reconsidere
-- Criar interfaces quando uma implementação concreta resolve
-- Usar design patterns complexos sem necessidade clara
-- Otimizar performance antes de medir gargalos reais
-- Adicionar dependências para funcionalidades simples
-- Implementar configurações complexas "para o futuro"
-
 
 ## Processo de Commit
 

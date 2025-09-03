@@ -21,8 +21,12 @@ go.work
 
 # Environment variables
 .env
+.env.*
 .env.local
 .env.*.local
+.env.prd
+.env.production
+.env.staging
 
 # IDE
 .idea/

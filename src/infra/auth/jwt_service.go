@@ -1,166 +1,259 @@
 package auth
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"time"
 
-	"api/domain/entities"
-	"api/domain/interfaces"
-	"api/infra/config"
-
-	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"terra-allwert/domain/entities"
 )
 
-type jwtService struct {
-	userRepo   interfaces.UserRepository
-	jwtSecret  string
-	expiration time.Duration
+// JWTService handles JWT token operations
+type JWTService struct {
+	secretKey             string
+	accessTokenDuration   time.Duration
+	refreshTokenDuration  time.Duration
 }
 
-func NewJWTService(userRepo interfaces.UserRepository, cfg *config.Config) interfaces.AuthService {
-	return &jwtService{
-		userRepo:   userRepo,
-		jwtSecret:  cfg.JWT.Secret,
-		expiration: cfg.JWT.AccessTokenExpiry,
+// TokenPair represents access and refresh tokens
+type TokenPair struct {
+	AccessToken           string    `json:"access_token"`
+	RefreshToken          string    `json:"refresh_token"`
+	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
+	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
+	TokenType             string    `json:"token_type"`
+}
+
+// Claims represents JWT token claims
+type Claims struct {
+	UserID       uuid.UUID          `json:"user_id"`
+	Email        string             `json:"email"`
+	Role         entities.UserRole  `json:"role"`
+	EnterpriseID uuid.UUID          `json:"enterprise_id"`
+	TokenType    string             `json:"token_type"` // "access" or "refresh"
+	jwt.RegisteredClaims
+}
+
+// RefreshTokenClaims represents refresh token specific claims
+type RefreshTokenClaims struct {
+	UserID    uuid.UUID `json:"user_id"`
+	TokenID   string    `json:"token_id"` // Unique token identifier
+	TokenType string    `json:"token_type"`
+	jwt.RegisteredClaims
+}
+
+// NewJWTService creates a new JWT service
+func NewJWTService(secretKey string, accessTokenHours, refreshTokenHours int) *JWTService {
+	return &JWTService{
+		secretKey:             secretKey,
+		accessTokenDuration:   time.Duration(accessTokenHours) * time.Hour,
+		refreshTokenDuration:  time.Duration(refreshTokenHours) * time.Hour,
 	}
 }
 
-func (s *jwtService) Login(ctx context.Context, request *entities.LoginRequest) (*entities.LoginResponse, error) {
-	user, err := s.userRepo.GetByEmail(ctx, request.Email)
+// GenerateTokenPair creates both access and refresh tokens
+func (j *JWTService) GenerateTokenPair(user *entities.User) (*TokenPair, error) {
+	now := time.Now()
+	tokenID := uuid.New().String()
+
+	// Generate access token
+	accessToken, accessExpiresAt, err := j.generateAccessToken(user, now)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	if !user.Active {
-		return nil, errors.New("account is inactive")
-	}
-
-	if !s.VerifyPassword(user.Password, request.Password) {
-		return nil, errors.New("invalid credentials")
-	}
-
-	accessToken, refreshToken, expiresAt, err := s.GenerateTokens(ctx, user)
+	// Generate refresh token
+	refreshToken, refreshExpiresAt, err := j.generateRefreshToken(user.ID, tokenID, now)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	err = s.userRepo.UpdateLastLogin(ctx, user.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update last login: %w", err)
-	}
-
-	user.Password = ""
-
-	return &entities.LoginResponse{
-		Token:        accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Unix(expiresAt, 0),
-		User:         user,
+	return &TokenPair{
+		AccessToken:           accessToken,
+		RefreshToken:          refreshToken,
+		AccessTokenExpiresAt:  accessExpiresAt,
+		RefreshTokenExpiresAt: refreshExpiresAt,
+		TokenType:             "Bearer",
 	}, nil
 }
 
-func (s *jwtService) ValidateToken(ctx context.Context, tokenString string) (*entities.JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &entities.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+// generateAccessToken creates a new access token
+func (j *JWTService) generateAccessToken(user *entities.User, now time.Time) (string, time.Time, error) {
+	expiresAt := now.Add(j.accessTokenDuration)
+
+	claims := &Claims{
+		UserID:    user.ID,
+		Email:     user.Email,
+		Role:      user.Role,
+		TokenType: "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    "terra-allwert-api",
+			Subject:   user.ID.String(),
+		},
+	}
+
+	// Add enterprise ID
+	claims.EnterpriseID = user.EnterpriseID
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(j.secretKey))
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	return tokenString, expiresAt, nil
+}
+
+// generateRefreshToken creates a new refresh token
+func (j *JWTService) generateRefreshToken(userID uuid.UUID, tokenID string, now time.Time) (string, time.Time, error) {
+	expiresAt := now.Add(j.refreshTokenDuration)
+
+	claims := &RefreshTokenClaims{
+		UserID:    userID,
+		TokenID:   tokenID,
+		TokenType: "refresh",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    "terra-allwert-api",
+			Subject:   userID.String(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(j.secretKey))
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	return tokenString, expiresAt, nil
+}
+
+// ValidateAccessToken validates and parses an access token
+func (j *JWTService) ValidateAccessToken(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(s.jwtSecret), nil
+		return []byte(j.secretKey), nil
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*entities.JWTClaims)
-	if !ok || !token.Valid {
-		return nil, errors.New("invalid token claims")
+	if !token.Valid {
+		return nil, fmt.Errorf("token is not valid")
 	}
 
-	if claims.Exp < time.Now().Unix() {
-		return nil, errors.New("token has expired")
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+
+	if claims.TokenType != "access" {
+		return nil, fmt.Errorf("token is not an access token")
 	}
 
 	return claims, nil
 }
 
-func (s *jwtService) RefreshToken(ctx context.Context, refreshToken string) (*entities.LoginResponse, error) {
-	claims, err := s.ValidateToken(ctx, refreshToken)
+// ValidateRefreshToken validates and parses a refresh token
+func (j *JWTService) ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(j.secretKey), nil
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
 
-	user, err := s.userRepo.GetByID(ctx, claims.UserID)
+	if !token.Valid {
+		return nil, fmt.Errorf("refresh token is not valid")
+	}
+
+	claims, ok := token.Claims.(*RefreshTokenClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid refresh token claims")
+	}
+
+	if claims.TokenType != "refresh" {
+		return nil, fmt.Errorf("token is not a refresh token")
+	}
+
+	return claims, nil
+}
+
+// RefreshAccessToken generates a new access token using a valid refresh token
+func (j *JWTService) RefreshAccessToken(refreshTokenString string, getUserByID func(uuid.UUID) (*entities.User, error)) (*TokenPair, error) {
+	// Validate refresh token
+	refreshClaims, err := j.ValidateRefreshToken(refreshTokenString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid refresh token: %w", err)
+	}
+
+	// Get user data
+	user, err := getUserByID(refreshClaims.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	if !user.Active {
-		return nil, errors.New("account is inactive")
-	}
-
-	accessToken, newRefreshToken, expiresAt, err := s.GenerateTokens(ctx, user)
+	// Generate new token pair
+	tokenPair, err := j.GenerateTokenPair(user)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+		return nil, fmt.Errorf("failed to generate new tokens: %w", err)
 	}
 
-	user.Password = ""
-
-	return &entities.LoginResponse{
-		Token:        accessToken,
-		RefreshToken: newRefreshToken,
-		ExpiresAt:    time.Unix(expiresAt, 0),
-		User:         user,
-	}, nil
+	return tokenPair, nil
 }
 
-func (s *jwtService) HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
-}
-
-func (s *jwtService) VerifyPassword(hashedPassword, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	return err == nil
-}
-
-func (s *jwtService) GenerateTokens(ctx context.Context, user *entities.User) (accessToken, refreshToken string, expiresAt int64, err error) {
-	now := time.Now()
-	exp := now.Add(s.expiration)
-	refreshExp := now.Add(7 * 24 * time.Hour) // 7 days for refresh token
-
-	accessClaims := &entities.JWTClaims{
-		UserID:   user.ID,
-		Username: user.Username,
-		Role:     user.Role,
-		Exp:      exp.Unix(),
-		Iat:      now.Unix(),
+// ExtractTokenFromAuthHeader extracts token from Authorization header
+func ExtractTokenFromAuthHeader(authHeader string) (string, error) {
+	if authHeader == "" {
+		return "", fmt.Errorf("authorization header is empty")
 	}
 
-	refreshClaims := &entities.JWTClaims{
-		UserID:   user.ID,
-		Username: user.Username,
-		Role:     user.Role,
-		Exp:      refreshExp.Unix(),
-		Iat:      now.Unix(),
+	const bearerPrefix = "Bearer "
+	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
+		return "", fmt.Errorf("invalid authorization header format")
 	}
 
-	accessToken, err = s.generateToken(accessClaims)
+	return authHeader[len(bearerPrefix):], nil
+}
+
+// TokenBlacklist interface for managing revoked tokens
+type TokenBlacklist interface {
+	AddToken(tokenID string, expiresAt time.Time) error
+	IsTokenBlacklisted(tokenID string) (bool, error)
+	CleanupExpiredTokens() error
+}
+
+// RevokeToken adds a token to the blacklist
+func (j *JWTService) RevokeToken(tokenString string, blacklist TokenBlacklist) error {
+	// Parse token to get claims without validation (token might be expired)
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, &Claims{})
 	if err != nil {
-		return "", "", 0, err
+		return fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	refreshToken, err = s.generateToken(refreshClaims)
-	if err != nil {
-		return "", "", 0, err
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return fmt.Errorf("invalid token claims")
 	}
 
-	return accessToken, refreshToken, exp.Unix(), nil
+	// Add to blacklist with expiration time
+	return blacklist.AddToken(claims.ID, claims.ExpiresAt.Time)
 }
 
-func (s *jwtService) generateToken(claims *entities.JWTClaims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(s.jwtSecret))
+// IsTokenRevoked checks if a token is in the blacklist
+func (j *JWTService) IsTokenRevoked(tokenID string, blacklist TokenBlacklist) (bool, error) {
+	return blacklist.IsTokenBlacklisted(tokenID)
 }

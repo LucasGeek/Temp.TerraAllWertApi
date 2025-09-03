@@ -1,0 +1,215 @@
+# =============================================================================
+# DOCKER COMPOSE - SWARM - PRODUÇÃO
+# Arquivo para deploy da API Terra Allwert em ambiente de produção com Docker Swarm + Traefik
+# =============================================================================
+services:
+  # ===========================================================================
+  # TERRA_ALLWERT API - SERVIÇO PRINCIPAL
+  # ===========================================================================
+  prd-api:
+    image: terra-allwert-api:prd
+
+    environment:
+      # 🔧 Configurações de servidor
+      - PORT=3000
+      - ENVIRONMENT=production
+
+      # 🔧 Configurações de banco de dados
+      - DB_DRIVER=postgres
+      - DB_HOST=prd-db
+      - DB_PORT=5432
+      - DB_USER=${TERRA_ALLWERT_PRD_DB_USER}
+      - DB_PASSWORD=${TERRA_ALLWERT_PRD_DB_PASSWORD}
+      - DB_NAME=${TERRA_ALLWERT_PRD_DB_NAME}
+      - DB_SSLMODE=disable
+
+      # 🔧 Configurações do MinIO
+      - MINIO_ENDPOINT=prd-minio:9000
+      - MINIO_ACCESS_KEY=${TERRA_ALLWERT_PRD_MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${TERRA_ALLWERT_PRD_MINIO_SECRET_KEY}
+      - MINIO_USE_SSL=false
+      - MINIO_BUCKET=terraallwert
+
+      # 🔧 Configurações do Redis
+      - REDIS_HOST=prd-cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${TERRA_ALLWERT_PRD_REDIS_PASSWORD}
+      - REDIS_DB=0
+
+      # 🔐 Segurança JWT
+      - JWT_SECRET=${TERRA_ALLWERT_PRD_JWT_SECRET}
+      - JWT_EXPIRATION_HOURS=24
+
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 15s
+      resources:
+        limits:
+          cpus: "0.5"        # 🔧 LIMITE: 0.5 CPUs (maior para produção)
+          memory: 512M       # 🔧 LIMITE: 512MB (maior para produção)
+        reservations:
+          cpus: "0.2"        # 🔧 RESERVA: 0.2 CPUs garantidos
+          memory: 256M       # 🔧 RESERVA: 256MB garantidos
+      labels:
+        # 🛡️ Habilita Traefik
+        - "traefik.enable=true"
+
+        # 🌐 Define a rota HTTP para o IP direto (sem DNS/SSL)
+        - "traefik.http.routers.TerraAllWertApp-prd.rule=Host(`app.terra-allwert.online`)"
+        - "traefik.http.routers.TerraAllWertApp-prd.entrypoints=web"
+        
+        # 🔧 CORREÇÃO: Service e porta
+        - "traefik.http.services.TerraAllWertApp-prd.loadbalancer.server.port=3000"
+        - "traefik.http.routers.TerraAllWertApp-prd.service=TerraAllWertApp-prd"
+        
+        # 🔧 CORREÇÃO: Rede correta
+        - "traefik.docker.network=TerraAllWertNet"
+        - "traefik.docker.lbswarm=true"
+        
+        # 🔧 Health check para Traefik
+        - "traefik.http.services.TerraAllWertApp-prd.loadbalancer.healthcheck.path=/api/health"
+        - "traefik.http.services.TerraAllWertApp-prd.loadbalancer.healthcheck.interval=30s"
+
+    networks:
+      - TerraAllWertApp
+      - TerraAllWertNet
+
+  # ===========================================================================
+  # POSTGRESQL - BANCO DE DADOS
+  # ===========================================================================
+  prd-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${TERRA_ALLWERT_PRD_DB_USER}
+      - POSTGRES_PASSWORD=${TERRA_ALLWERT_PRD_DB_PASSWORD}
+      - POSTGRES_DB=${TERRA_ALLWERT_PRD_DB_NAME}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --locale=C
+    volumes:
+      - postgres_prd_data:/var/lib/postgresql/data
+      - postgres_prd_backups:/backups
+    networks:
+      - TerraAllWertApp
+    deploy:
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.4"
+          memory: 512M
+        reservations:
+          cpus: "0.2"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TERRA_ALLWERT_PRD_DB_USER} -d ${TERRA_ALLWERT_PRD_DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  
+  # ===========================================================================
+  # REDIS - CACHE
+  # ===========================================================================
+  prd-cache:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 300
+      --timeout 300
+    volumes:
+      - redis_prd_data:/data
+    networks:
+      - TerraAllWertApp
+    deploy:
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ===========================================================================
+  # MINIO - ARMAZENAMENTO S3-COMPATIBLE
+  # ===========================================================================
+  prd-minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${TERRA_ALLWERT_PRD_MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${TERRA_ALLWERT_PRD_MINIO_SECRET_KEY}
+    volumes:
+      - minio_prd_data:/data
+    networks:
+      - TerraAllWertApp
+      - TerraAllWertNet
+    deploy:
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+      labels:
+        # MinIO Console via Traefik
+        - "traefik.enable=true"
+        - "traefik.http.routers.terra-allwert-minio-console.rule=Host(`app.terra-allwert.online`) && PathPrefix(`/minio-console`)"
+        - "traefik.http.routers.terra-allwert-minio-console.entrypoints=web"
+        - "traefik.http.services.terra-allwert-minio-console.loadbalancer.server.port=9001"
+        - "traefik.http.middlewares.terra-allwert-minio-console-strip.stripprefix.prefixes=/minio-console"
+        - "traefik.http.routers.terra-allwert-minio-console.middlewares=terra-allwert-minio-console-strip"
+        - "traefik.docker.network=TerraAllWertNet"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# REDES UTILIZADAS
+# =============================================================================
+networks:
+  # 🔌 Rede interna privada entre os serviços da Terra Allwert
+  TerraAllWertApp:
+    driver: overlay
+    attachable: true
+    name: TerraAllWertApp
+
+  # 🌐 Rede externa usada pelo Traefik para descoberta e roteamento
+  TerraAllWertNet:
+    external: true
+    attachable: true
+    name: TerraAllWertNet
+
+# =============================================================================
+# VOLUMES PERSISTENTES
+# =============================================================================
+volumes:
+  postgres_prd_data:
+    driver: local
+  postgres_prd_backups:
+    driver: local
+  redis_prd_data:
+    driver: local
+  minio_prd_data:
+    driver: local

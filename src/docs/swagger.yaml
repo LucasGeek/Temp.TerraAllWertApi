@@ -1,0 +1,5141 @@
+basePath: /api/v1
+definitions:
+  auth.TokenPair:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expires_at:
+        type: string
+      token_type:
+        type: string
+    type: object
+  entities.ActionData:
+    additionalProperties: true
+    type: object
+  entities.CarouselItem:
+    type: object
+  entities.CarouselItemType:
+    enum:
+    - image
+    - video
+    - map
+    - html
+    type: string
+    x-enum-varnames:
+    - CarouselItemTypeImage
+    - CarouselItemTypeVideo
+    - CarouselItemTypeMap
+    - CarouselItemTypeHTML
+  entities.CarouselTextOverlay:
+    properties:
+      animation_type:
+        type: string
+      background_color:
+        type: string
+      carousel_item:
+        $ref: '#/definitions/entities.CarouselItem'
+      carousel_item_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      position_x:
+        type: number
+      position_y:
+        type: number
+      text_color:
+        type: string
+      text_size:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entities.Enterprise:
+    type: object
+  entities.File:
+    type: object
+  entities.FileMetadata:
+    additionalProperties: true
+    type: object
+  entities.FileType:
+    enum:
+    - image
+    - video
+    - document
+    type: string
+    x-enum-varnames:
+    - FileTypeImage
+    - FileTypeVideo
+    - FileTypeDocument
+  entities.FileVariant:
+    properties:
+      cdn_url:
+        type: string
+      created_at:
+        type: string
+      file_size_bytes:
+        minimum: 1
+        type: integer
+      height:
+        type: integer
+      id:
+        type: string
+      original_file:
+        $ref: '#/definitions/entities.File'
+      original_file_id:
+        type: string
+      storage_path:
+        type: string
+      variant_name:
+        type: string
+      width:
+        type: integer
+    required:
+    - storage_path
+    - variant_name
+    type: object
+  entities.Floor:
+    type: object
+  entities.MapType:
+    enum:
+    - standard
+    - satellite
+    - terrain
+    - hybrid
+    type: string
+    x-enum-varnames:
+    - MapTypeStandard
+    - MapTypeSatellite
+    - MapTypeTerrain
+    - MapTypeHybrid
+  entities.Menu:
+    type: object
+  entities.MenuCarousel:
+    type: object
+  entities.MenuFloorPlan:
+    properties:
+      created_at:
+        type: string
+      default_view:
+        type: string
+      enable_unit_comparison:
+        type: boolean
+      enable_unit_filters:
+        type: boolean
+      id:
+        type: string
+      menu:
+        $ref: '#/definitions/entities.Menu'
+      menu_id:
+        type: string
+      towers:
+        description: Relationships
+        items:
+          $ref: '#/definitions/entities.Tower'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  entities.MenuPins:
+    type: object
+  entities.PinAction:
+    enum:
+    - info
+    - carousel
+    - link
+    - modal
+    type: string
+    x-enum-varnames:
+    - PinActionInfo
+    - PinActionCarousel
+    - PinActionLink
+    - PinActionModal
+  entities.PinMarker:
+    type: object
+  entities.PinMarkerImage:
+    properties:
+      caption:
+        type: string
+      created_at:
+        type: string
+      file:
+        $ref: '#/definitions/entities.File'
+      file_id:
+        type: string
+      id:
+        type: string
+      pin_marker:
+        $ref: '#/definitions/entities.PinMarker'
+      pin_marker_id:
+        type: string
+      position:
+        type: integer
+    type: object
+  entities.Suite:
+    type: object
+  entities.SuiteStatus:
+    enum:
+    - available
+    - reserved
+    - sold
+    - unavailable
+    type: string
+    x-enum-varnames:
+    - SuiteStatusAvailable
+    - SuiteStatusReserved
+    - SuiteStatusSold
+    - SuiteStatusUnavailable
+  entities.SunPosition:
+    enum:
+    - "N"
+    - NE
+    - E
+    - SE
+    - S
+    - SW
+    - W
+    - NW
+    type: string
+    x-enum-varnames:
+    - SunPositionN
+    - SunPositionNE
+    - SunPositionE
+    - SunPositionSE
+    - SunPositionS
+    - SunPositionSW
+    - SunPositionW
+    - SunPositionNW
+  entities.Tower:
+    type: object
+  entities.UserRole:
+    enum:
+    - visitor
+    - manager
+    - admin
+    type: string
+    x-enum-varnames:
+    - UserRoleVisitor
+    - UserRoleManager
+    - UserRoleAdmin
+  handlers.AuthResponse:
+    properties:
+      message:
+        type: string
+      tokens:
+        $ref: '#/definitions/auth.TokenPair'
+      user:
+        $ref: '#/definitions/handlers.UserResponse'
+    type: object
+  handlers.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  handlers.CompleteMultipartRequest:
+    properties:
+      parts:
+        items:
+          $ref: '#/definitions/interfaces.CompletePart'
+        type: array
+      upload_id:
+        type: string
+    required:
+    - parts
+    - upload_id
+    type: object
+  handlers.CreateVariantRequest:
+    properties:
+      height:
+        minimum: 1
+        type: integer
+      variant_name:
+        type: string
+      width:
+        minimum: 1
+        type: integer
+    required:
+    - height
+    - variant_name
+    - width
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      error:
+        example: Internal server error
+        type: string
+      message:
+        example: Detailed error message
+        type: string
+    type: object
+  handlers.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.MultipartUploadRequest:
+    properties:
+      content_type:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        minimum: 1
+        type: integer
+      part_size:
+        description: Optional, defaults to 5MB
+        type: integer
+    required:
+    - content_type
+    - file_name
+    - file_size
+    type: object
+  handlers.MultipartUploadResponse:
+    properties:
+      file_id:
+        type: string
+      part_urls:
+        items:
+          $ref: '#/definitions/handlers.PartURL'
+        type: array
+      storage_path:
+        type: string
+      upload_id:
+        type: string
+    type: object
+  handlers.OptimizedUploadRequest:
+    properties:
+      content_type:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        minimum: 1
+        type: integer
+      user_id:
+        type: string
+    required:
+    - content_type
+    - file_name
+    - file_size
+    - user_id
+    type: object
+  handlers.OptimizedUploadResponse:
+    properties:
+      expires_at:
+        type: string
+      file_id:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      method:
+        description: '"direct", "presigned", "multipart"'
+        type: string
+      part_urls:
+        items:
+          $ref: '#/definitions/handlers.PartUploadInfo'
+        type: array
+      upload_id:
+        type: string
+      upload_url:
+        type: string
+    type: object
+  handlers.PartURL:
+    properties:
+      expires_at:
+        type: string
+      part_number:
+        type: integer
+      upload_url:
+        type: string
+    type: object
+  handlers.PartUploadInfo:
+    properties:
+      part_number:
+        type: integer
+      size:
+        type: integer
+      upload_url:
+        type: string
+    type: object
+  handlers.PresignedUploadRequest:
+    properties:
+      content_type:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        minimum: 1
+        type: integer
+    required:
+    - content_type
+    - file_name
+    - file_size
+    type: object
+  handlers.PresignedUploadResponse:
+    properties:
+      expires_at:
+        type: string
+      file_id:
+        type: string
+      storage_path:
+        type: string
+      upload_url:
+        type: string
+    type: object
+  handlers.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handlers.RegisterRequest:
+    properties:
+      email:
+        type: string
+      enterprise_id:
+        type: string
+      name:
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+      role:
+        $ref: '#/definitions/entities.UserRole'
+    required:
+    - email
+    - enterprise_id
+    - name
+    - password
+    type: object
+  handlers.ResetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  handlers.SeedResponse:
+    properties:
+      message:
+        example: Seeds executed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  handlers.UpdateProfileRequest:
+    properties:
+      email:
+        type: string
+      name:
+        minLength: 2
+        type: string
+    type: object
+  handlers.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      enterprise_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/entities.UserRole'
+    type: object
+  interfaces.CompletePart:
+    properties:
+      etag:
+        type: string
+      part_number:
+        type: integer
+    type: object
+  main.HealthResponse:
+    properties:
+      message:
+        example: API is running
+        type: string
+      services:
+        additionalProperties:
+          $ref: '#/definitions/main.ServiceHealth'
+        type: object
+      status:
+        example: ok
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+  main.ServiceHealth:
+    properties:
+      error:
+        example: Connection failed
+        type: string
+      message:
+        example: Connected
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  storage.UploadState:
+    properties:
+      content_type:
+        type: string
+      created_at:
+        type: string
+      object_key:
+        type: string
+      parts:
+        additionalProperties:
+          type: string
+        description: part number -> etag
+        type: object
+      status:
+        $ref: '#/definitions/storage.UploadStatus'
+      total_size:
+        type: integer
+      updated_at:
+        type: string
+      upload_id:
+        type: string
+      uploaded_size:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  storage.UploadStatus:
+    enum:
+    - initiated
+    - in_progress
+    - completed
+    - failed
+    - aborted
+    type: string
+    x-enum-varnames:
+    - UploadStatusInitiated
+    - UploadStatusInProgress
+    - UploadStatusCompleted
+    - UploadStatusFailed
+    - UploadStatusAborted
+host: localhost:3000
+info:
+  contact: {}
+  description: API REST para sistema de gerenciamento de torres
+  title: Terra Allwert API
+  version: "1.0"
+paths:
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change authenticated user's password
+      parameters:
+      - description: Password data
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change password
+      tags:
+      - auth
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Send password reset instructions to user's email
+      parameters:
+      - description: Email for password reset
+        in: body
+        name: forgot
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Initiate password reset
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate user tokens
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - auth
+  /auth/profile:
+    get:
+      description: Get authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - auth
+    put:
+      consumes:
+      - application/json
+      description: Update authenticated user's profile information
+      parameters:
+      - description: Profile data
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get new access token using refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.TokenPair'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: Registration data
+        in: body
+        name: registration
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User registration
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset user password using the reset token from email
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: reset
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reset password with token
+      tags:
+      - auth
+  /carousel-items:
+    post:
+      consumes:
+      - application/json
+      description: Create a new carousel item with the provided data
+      parameters:
+      - description: Carousel Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/entities.CarouselItem'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.CarouselItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new carousel item
+      tags:
+      - carousel-items
+  /carousel-items/{id}:
+    delete:
+      description: Delete a carousel item by ID
+      parameters:
+      - description: Carousel Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete carousel item
+      tags:
+      - carousel-items
+    put:
+      consumes:
+      - application/json
+      description: Update an existing carousel item
+      parameters:
+      - description: Carousel Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Carousel Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/entities.CarouselItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.CarouselItem'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update carousel item
+      tags:
+      - carousel-items
+  /carousel-items/{id}/position:
+    patch:
+      consumes:
+      - application/json
+      description: Update the position of a carousel item
+      parameters:
+      - description: Carousel Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Position data
+        in: body
+        name: position
+        required: true
+        schema:
+          properties:
+            position:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update carousel item position
+      tags:
+      - carousel-items
+  /carousel-items/{itemId}/text-overlays:
+    get:
+      description: Get all text overlays for a specific carousel item
+      parameters:
+      - description: Carousel Item ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.CarouselTextOverlay'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get text overlays by carousel item
+      tags:
+      - text-overlays
+  /enterprises:
+    get:
+      description: Get all enterprises with optional pagination
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Enterprise'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all enterprises
+      tags:
+      - enterprises
+    post:
+      consumes:
+      - application/json
+      description: Create a new enterprise with the provided data
+      parameters:
+      - description: Enterprise data
+        in: body
+        name: enterprise
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Enterprise'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Enterprise'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new enterprise
+      tags:
+      - enterprises
+  /enterprises/{enterpriseId}/menus:
+    get:
+      description: Get all menus for a specific enterprise
+      parameters:
+      - description: Enterprise ID
+        in: path
+        name: enterpriseId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Menu'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menus by enterprise
+      tags:
+      - menus
+  /enterprises/{enterpriseId}/menus/hierarchy:
+    get:
+      description: Get complete menu hierarchy for a specific enterprise
+      parameters:
+      - description: Enterprise ID
+        in: path
+        name: enterpriseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Menu'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menu hierarchy
+      tags:
+      - menus
+  /enterprises/{id}:
+    delete:
+      description: Delete an enterprise by ID
+      parameters:
+      - description: Enterprise ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete enterprise
+      tags:
+      - enterprises
+    get:
+      description: Get a single enterprise by its ID
+      parameters:
+      - description: Enterprise ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Enterprise'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get enterprise by ID
+      tags:
+      - enterprises
+    put:
+      consumes:
+      - application/json
+      description: Update an existing enterprise
+      parameters:
+      - description: Enterprise ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Enterprise data
+        in: body
+        name: enterprise
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Enterprise'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Enterprise'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update enterprise
+      tags:
+      - enterprises
+  /enterprises/search:
+    get:
+      description: Search enterprises by query string
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Enterprise'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Search enterprises
+      tags:
+      - enterprises
+  /enterprises/slug/{slug}:
+    get:
+      description: Get a single enterprise by its slug
+      parameters:
+      - description: Enterprise slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Enterprise'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get enterprise by slug
+      tags:
+      - enterprises
+  /file-variants:
+    get:
+      description: Get all file variants with optional pagination
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by width
+        in: query
+        name: width
+        type: integer
+      - description: Filter by height
+        in: query
+        name: height
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.FileVariant'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all file variants
+      tags:
+      - file-variants
+    post:
+      consumes:
+      - application/json
+      description: Create a new file variant (thumbnail, resized version, etc.)
+      parameters:
+      - description: File variant data
+        in: body
+        name: variant
+        required: true
+        schema:
+          $ref: '#/definitions/entities.FileVariant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.FileVariant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new file variant
+      tags:
+      - file-variants
+  /file-variants/{id}:
+    delete:
+      description: Delete a file variant by ID (also removes from storage)
+      parameters:
+      - description: File Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete file variant
+      tags:
+      - file-variants
+    get:
+      description: Get a single file variant by its ID
+      parameters:
+      - description: File Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.FileVariant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get file variant by ID
+      tags:
+      - file-variants
+    put:
+      consumes:
+      - application/json
+      description: Update an existing file variant
+      parameters:
+      - description: File Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: File variant data
+        in: body
+        name: variant
+        required: true
+        schema:
+          $ref: '#/definitions/entities.FileVariant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.FileVariant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update file variant
+      tags:
+      - file-variants
+  /file-variants/{id}/download-url:
+    get:
+      description: Generate a presigned URL for secure variant download
+      parameters:
+      - description: File Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 3600
+        description: Expiration in seconds
+        in: query
+        name: expires_in
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get presigned variant download URL
+      tags:
+      - file-variants
+  /file-variants/{id}/upload-url:
+    get:
+      consumes:
+      - application/json
+      description: Generate a presigned URL for uploading a file variant
+      parameters:
+      - description: File Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 3600
+        description: Expiration in seconds
+        in: query
+        name: expires_in
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get presigned variant upload URL
+      tags:
+      - file-variants
+  /files:
+    get:
+      description: Get all files with optional pagination and filters
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: File type filter
+        in: query
+        name: file_type
+        type: string
+      - description: MIME type filter
+        in: query
+        name: mime_type
+        type: string
+      - description: Uploader ID filter
+        in: query
+        name: uploader
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.File'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all files
+      tags:
+      - files
+    post:
+      consumes:
+      - application/json
+      description: Create a new file record with the provided data
+      parameters:
+      - description: File data
+        in: body
+        name: file
+        required: true
+        schema:
+          $ref: '#/definitions/entities.File'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.File'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new file
+      tags:
+      - files
+  /files/{fileId}/complete-multipart:
+    post:
+      consumes:
+      - application/json
+      description: Complete a multipart upload after all parts are uploaded
+      parameters:
+      - description: File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      - description: Complete request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CompleteMultipartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.File'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Complete multipart upload
+      tags:
+      - files
+  /files/{fileId}/variants:
+    delete:
+      description: Delete all variants for a specific original file
+      parameters:
+      - description: Original File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete all variants for file
+      tags:
+      - file-variants
+    get:
+      description: Get all variants for a specific original file
+      parameters:
+      - description: Original File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.FileVariant'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get variants by original file
+      tags:
+      - file-variants
+    post:
+      consumes:
+      - application/json
+      description: Create a new variant for a specific original file
+      parameters:
+      - description: Original File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      - description: Variant creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateVariantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.FileVariant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create variant for file
+      tags:
+      - file-variants
+  /files/{fileId}/variants/{variantName}:
+    get:
+      description: Get a specific variant by original file ID and variant name
+      parameters:
+      - description: Original File ID
+        in: path
+        name: fileId
+        required: true
+        type: string
+      - description: Variant Name
+        in: path
+        name: variantName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.FileVariant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get variant by name
+      tags:
+      - file-variants
+  /files/{id}:
+    delete:
+      description: Delete a file by ID (also removes from storage)
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete file
+      tags:
+      - files
+    get:
+      description: Get a single file by its ID
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.File'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get file by ID
+      tags:
+      - files
+    put:
+      consumes:
+      - application/json
+      description: Update an existing file
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: File data
+        in: body
+        name: file
+        required: true
+        schema:
+          $ref: '#/definitions/entities.File'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.File'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update file
+      tags:
+      - files
+  /files/{id}/download-url:
+    get:
+      description: Generate a presigned URL for secure file download
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 3600
+        description: Expiration in seconds
+        in: query
+        name: expires_in
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get presigned download URL
+      tags:
+      - files
+  /files/multipart-upload:
+    post:
+      consumes:
+      - application/json
+      description: Initiate a multipart upload for large files
+      parameters:
+      - description: Multipart upload request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.MultipartUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.MultipartUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Request multipart upload
+      tags:
+      - files
+  /files/optimized-upload:
+    post:
+      consumes:
+      - application/json
+      description: Automatically chooses the best upload method based on file size
+        and system load
+      parameters:
+      - description: Upload request
+        in: body
+        name: upload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.OptimizedUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.OptimizedUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Initiate optimized file upload
+      tags:
+      - files
+  /files/optimized-upload/{uploadId}/abort:
+    delete:
+      description: Cancel an ongoing multipart upload
+      parameters:
+      - description: Upload ID
+        in: path
+        name: uploadId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Abort upload
+      tags:
+      - files
+  /files/optimized-upload/{uploadId}/complete:
+    post:
+      consumes:
+      - application/json
+      description: Complete a multipart upload with part information
+      parameters:
+      - description: Upload ID
+        in: path
+        name: uploadId
+        required: true
+        type: string
+      - description: Completion data
+        in: body
+        name: completion
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CompleteMultipartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.File'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Complete optimized upload
+      tags:
+      - files
+  /files/presigned-upload:
+    post:
+      consumes:
+      - application/json
+      description: Generate a presigned URL for direct file upload to storage
+      parameters:
+      - description: Upload request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PresignedUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PresignedUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Request presigned upload URL
+      tags:
+      - files
+  /files/upload-progress/{uploadId}:
+    get:
+      description: Get the current progress of a file upload
+      parameters:
+      - description: Upload ID
+        in: path
+        name: uploadId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/storage.UploadState'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get upload progress
+      tags:
+      - files
+  /floors:
+    get:
+      description: Get all floors with optional pagination
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Floor'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all floors
+      tags:
+      - floors
+    post:
+      consumes:
+      - application/json
+      description: Create a new floor with the provided data
+      parameters:
+      - description: Floor data
+        in: body
+        name: floor
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Floor'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Floor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new floor
+      tags:
+      - floors
+  /floors/{floorId}/suites:
+    get:
+      description: Get all suites for a specific floor
+      parameters:
+      - description: Floor ID
+        in: path
+        name: floorId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Suite'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get suites by floor
+      tags:
+      - suites
+  /floors/{id}:
+    delete:
+      description: Delete a floor by ID
+      parameters:
+      - description: Floor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete floor
+      tags:
+      - floors
+    get:
+      description: Get a single floor by its ID
+      parameters:
+      - description: Floor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Floor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get floor by ID
+      tags:
+      - floors
+    put:
+      consumes:
+      - application/json
+      description: Update an existing floor
+      parameters:
+      - description: Floor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Floor data
+        in: body
+        name: floor
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Floor'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Floor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update floor
+      tags:
+      - floors
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Verifica se a API está funcionando e testa conexões com MinIO e
+        Redis
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: Health Check
+      tags:
+      - health
+  /menu-carousels:
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu carousel with the provided data
+      parameters:
+      - description: Menu Carousel data
+        in: body
+        name: carousel
+        required: true
+        schema:
+          $ref: '#/definitions/entities.MenuCarousel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.MenuCarousel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new menu carousel
+      tags:
+      - carousels
+  /menu-carousels/{carouselId}/items:
+    get:
+      description: Get all carousel items for a specific menu carousel
+      parameters:
+      - description: Menu Carousel ID
+        in: path
+        name: carouselId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: Only active items
+        in: query
+        name: active_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.CarouselItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get carousel items by carousel
+      tags:
+      - carousel-items
+  /menu-carousels/{id}:
+    delete:
+      description: Delete a menu carousel by ID
+      parameters:
+      - description: Menu Carousel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete menu carousel
+      tags:
+      - carousels
+    get:
+      description: Get a single menu carousel by its ID
+      parameters:
+      - description: Menu Carousel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.MenuCarousel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menu carousel by ID
+      tags:
+      - carousels
+    put:
+      consumes:
+      - application/json
+      description: Update an existing menu carousel
+      parameters:
+      - description: Menu Carousel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Menu Carousel data
+        in: body
+        name: carousel
+        required: true
+        schema:
+          $ref: '#/definitions/entities.MenuCarousel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.MenuCarousel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update menu carousel
+      tags:
+      - carousels
+  /menu-floor-plans/{menuFloorPlanId}/towers:
+    get:
+      description: Get all towers for a specific menu floor plan
+      parameters:
+      - description: Menu Floor Plan ID
+        in: path
+        name: menuFloorPlanId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Tower'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get towers by menu floor plan
+      tags:
+      - towers
+  /menu-pins:
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu pins with the provided data
+      parameters:
+      - description: Menu Pins data
+        in: body
+        name: pins
+        required: true
+        schema:
+          $ref: '#/definitions/entities.MenuPins'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.MenuPins'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new menu pins
+      tags:
+      - pins
+  /menu-pins/{id}:
+    delete:
+      description: Delete a menu pins by ID
+      parameters:
+      - description: Menu Pins ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete menu pins
+      tags:
+      - pins
+    get:
+      description: Get a single menu pins by its ID
+      parameters:
+      - description: Menu Pins ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.MenuPins'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menu pins by ID
+      tags:
+      - pins
+    put:
+      consumes:
+      - application/json
+      description: Update an existing menu pins
+      parameters:
+      - description: Menu Pins ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Menu Pins data
+        in: body
+        name: pins
+        required: true
+        schema:
+          $ref: '#/definitions/entities.MenuPins'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.MenuPins'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update menu pins
+      tags:
+      - pins
+  /menu-pins/{menuPinId}/markers:
+    get:
+      description: Get all pin markers for a specific menu pins
+      parameters:
+      - description: Menu Pins ID
+        in: path
+        name: menuPinId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: Only visible markers
+        in: query
+        name: visible_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.PinMarker'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get pin markers by menu pins
+      tags:
+      - pin-markers
+  /menu-pins/{menuPinId}/markers/search:
+    get:
+      description: Get pin markers within a specific position range
+      parameters:
+      - description: Menu Pins ID
+        in: path
+        name: menuPinId
+        required: true
+        type: string
+      - description: Minimum X position
+        in: query
+        name: min_x
+        required: true
+        type: number
+      - description: Maximum X position
+        in: query
+        name: max_x
+        required: true
+        type: number
+      - description: Minimum Y position
+        in: query
+        name: min_y
+        required: true
+        type: number
+      - description: Maximum Y position
+        in: query
+        name: max_y
+        required: true
+        type: number
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.PinMarker'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get pin markers by position
+      tags:
+      - pin-markers
+  /menus:
+    get:
+      description: Get all menus with optional pagination
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Menu'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all menus
+      tags:
+      - menus
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu with the provided data
+      parameters:
+      - description: Menu data
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Menu'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new menu
+      tags:
+      - menus
+  /menus/{id}:
+    delete:
+      description: Delete a menu by ID
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete menu
+      tags:
+      - menus
+    get:
+      description: Get a single menu by its ID
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menu by ID
+      tags:
+      - menus
+    put:
+      consumes:
+      - application/json
+      description: Update an existing menu
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Menu data
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Menu'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update menu
+      tags:
+      - menus
+  /menus/{id}/position:
+    patch:
+      consumes:
+      - application/json
+      description: Update the position of a menu in the hierarchy
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Position data
+        in: body
+        name: position
+        required: true
+        schema:
+          properties:
+            position:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update menu position
+      tags:
+      - menus
+  /menus/{menuId}/carousel:
+    get:
+      description: Get menu carousel for a specific menu
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menuId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.MenuCarousel'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menu carousel by menu ID
+      tags:
+      - carousels
+  /menus/{menuId}/pins:
+    get:
+      description: Get menu pins for a specific menu
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menuId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.MenuPins'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get menu pins by menu ID
+      tags:
+      - pins
+  /menus/{parentId}/children:
+    get:
+      description: Get all child menus for a specific parent menu
+      parameters:
+      - description: Parent Menu ID
+        in: path
+        name: parentId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Menu'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get child menus
+      tags:
+      - menus
+  /pin-marker-images:
+    post:
+      consumes:
+      - application/json
+      description: Create a new pin marker image with the provided data
+      parameters:
+      - description: Pin Marker Image data
+        in: body
+        name: image
+        required: true
+        schema:
+          $ref: '#/definitions/entities.PinMarkerImage'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.PinMarkerImage'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new pin marker image
+      tags:
+      - pin-marker-images
+  /pin-marker-images/{id}:
+    delete:
+      description: Delete a pin marker image by ID
+      parameters:
+      - description: Pin Marker Image ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete pin marker image
+      tags:
+      - pin-marker-images
+    put:
+      consumes:
+      - application/json
+      description: Update an existing pin marker image
+      parameters:
+      - description: Pin Marker Image ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Pin Marker Image data
+        in: body
+        name: image
+        required: true
+        schema:
+          $ref: '#/definitions/entities.PinMarkerImage'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.PinMarkerImage'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update pin marker image
+      tags:
+      - pin-marker-images
+  /pin-marker-images/{id}/position:
+    patch:
+      consumes:
+      - application/json
+      description: Update the position of a pin marker image
+      parameters:
+      - description: Pin Marker Image ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Position data
+        in: body
+        name: position
+        required: true
+        schema:
+          properties:
+            position:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update pin marker image position
+      tags:
+      - pin-marker-images
+  /pin-markers:
+    post:
+      consumes:
+      - application/json
+      description: Create a new pin marker with the provided data
+      parameters:
+      - description: Pin Marker data
+        in: body
+        name: marker
+        required: true
+        schema:
+          $ref: '#/definitions/entities.PinMarker'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.PinMarker'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new pin marker
+      tags:
+      - pin-markers
+  /pin-markers/{id}:
+    delete:
+      description: Delete a pin marker by ID
+      parameters:
+      - description: Pin Marker ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete pin marker
+      tags:
+      - pin-markers
+    put:
+      consumes:
+      - application/json
+      description: Update an existing pin marker
+      parameters:
+      - description: Pin Marker ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Pin Marker data
+        in: body
+        name: marker
+        required: true
+        schema:
+          $ref: '#/definitions/entities.PinMarker'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.PinMarker'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update pin marker
+      tags:
+      - pin-markers
+  /pin-markers/{markerId}/images:
+    get:
+      description: Get all images for a specific pin marker
+      parameters:
+      - description: Pin Marker ID
+        in: path
+        name: markerId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.PinMarkerImage'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get pin marker images by marker
+      tags:
+      - pin-marker-images
+  /seeds/enterprises:
+    post:
+      consumes:
+      - application/json
+      description: Execute only enterprise seeds
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SeedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Enterprise Seeds
+      tags:
+      - seeds
+  /seeds/run:
+    post:
+      consumes:
+      - application/json
+      description: Execute database seeds to populate initial data (enterprises and
+        users)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SeedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Database Seeds
+      tags:
+      - seeds
+  /seeds/users:
+    post:
+      consumes:
+      - application/json
+      description: Execute only user seeds (requires enterprises to exist)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SeedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run User Seeds
+      tags:
+      - seeds
+  /suites:
+    get:
+      description: Get all suites with optional pagination
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Suite'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all suites
+      tags:
+      - suites
+    post:
+      consumes:
+      - application/json
+      description: Create a new suite with the provided data
+      parameters:
+      - description: Suite data
+        in: body
+        name: suite
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Suite'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Suite'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new suite
+      tags:
+      - suites
+  /suites/{id}:
+    delete:
+      description: Delete a suite by ID
+      parameters:
+      - description: Suite ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete suite
+      tags:
+      - suites
+    get:
+      description: Get a single suite by its ID
+      parameters:
+      - description: Suite ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Suite'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get suite by ID
+      tags:
+      - suites
+    put:
+      consumes:
+      - application/json
+      description: Update an existing suite
+      parameters:
+      - description: Suite ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Suite data
+        in: body
+        name: suite
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Suite'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Suite'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update suite
+      tags:
+      - suites
+  /suites/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a suite
+      parameters:
+      - description: Suite ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status data
+        in: body
+        name: status
+        required: true
+        schema:
+          properties:
+            status:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update suite status
+      tags:
+      - suites
+  /suites/search:
+    get:
+      description: Search suites with various filters
+      parameters:
+      - description: Minimum bedrooms
+        in: query
+        name: min_bedrooms
+        type: integer
+      - description: Maximum bedrooms
+        in: query
+        name: max_bedrooms
+        type: integer
+      - description: Minimum area (sqm)
+        in: query
+        name: min_area
+        type: number
+      - description: Maximum area (sqm)
+        in: query
+        name: max_area
+        type: number
+      - description: Minimum price
+        in: query
+        name: min_price
+        type: number
+      - description: Maximum price
+        in: query
+        name: max_price
+        type: number
+      - description: Suite status
+        enum:
+        - available
+        - reserved
+        - sold
+        - unavailable
+        in: query
+        name: status
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Suite'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Search suites
+      tags:
+      - suites
+  /text-overlays:
+    post:
+      consumes:
+      - application/json
+      description: Create a new text overlay with the provided data
+      parameters:
+      - description: Text Overlay data
+        in: body
+        name: overlay
+        required: true
+        schema:
+          $ref: '#/definitions/entities.CarouselTextOverlay'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.CarouselTextOverlay'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new text overlay
+      tags:
+      - text-overlays
+  /text-overlays/{id}:
+    delete:
+      description: Delete a text overlay by ID
+      parameters:
+      - description: Text Overlay ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete text overlay
+      tags:
+      - text-overlays
+    put:
+      consumes:
+      - application/json
+      description: Update an existing text overlay
+      parameters:
+      - description: Text Overlay ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Text Overlay data
+        in: body
+        name: overlay
+        required: true
+        schema:
+          $ref: '#/definitions/entities.CarouselTextOverlay'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.CarouselTextOverlay'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update text overlay
+      tags:
+      - text-overlays
+  /towers:
+    get:
+      description: Get all towers with optional pagination
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Tower'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all towers
+      tags:
+      - towers
+    post:
+      consumes:
+      - application/json
+      description: Create a new tower with the provided data
+      parameters:
+      - description: Tower data
+        in: body
+        name: tower
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Tower'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Tower'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new tower
+      tags:
+      - towers
+  /towers/{id}:
+    delete:
+      description: Delete a tower by ID
+      parameters:
+      - description: Tower ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete tower
+      tags:
+      - towers
+    get:
+      description: Get a single tower by its ID
+      parameters:
+      - description: Tower ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Tower'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get tower by ID
+      tags:
+      - towers
+    put:
+      consumes:
+      - application/json
+      description: Update an existing tower
+      parameters:
+      - description: Tower ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tower data
+        in: body
+        name: tower
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Tower'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Tower'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update tower
+      tags:
+      - towers
+  /towers/{id}/position:
+    patch:
+      consumes:
+      - application/json
+      description: Update the position of a tower
+      parameters:
+      - description: Tower ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Position data
+        in: body
+        name: position
+        required: true
+        schema:
+          properties:
+            position:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update tower position
+      tags:
+      - towers
+  /towers/{towerId}/floors:
+    get:
+      description: Get all floors for a specific tower
+      parameters:
+      - description: Tower ID
+        in: path
+        name: towerId
+        required: true
+        type: string
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Floor'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get floors by tower
+      tags:
+      - floors
+  /towers/{towerId}/floors/{floorNumber}:
+    get:
+      description: Get a specific floor by tower ID and floor number
+      parameters:
+      - description: Tower ID
+        in: path
+        name: towerId
+        required: true
+        type: string
+      - description: Floor Number
+        in: path
+        name: floorNumber
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Floor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get floor by number
+      tags:
+      - floors
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

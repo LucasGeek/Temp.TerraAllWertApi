@@ -3,90 +3,139 @@ package database
 import (
 	"fmt"
 	"log"
+	"time"
 
-	"api/infra/config"
+	"terra-allwert/domain/entities"
+	"terra-allwert/infra/config"
+	"terra-allwert/infra/database/seeds"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-func ConnectPostgres(cfg config.Config) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Database.Host,
-		cfg.Database.Port,
-		cfg.Database.User,
-		cfg.Database.Password,
-		cfg.Database.Name,
-		cfg.Database.SSLMode,
+// Database holds the database connection
+type Database struct {
+	DB *gorm.DB
+}
+
+// New creates a new database connection
+func New(cfg *config.Config) (*Database, error) {
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
+		cfg.DBHost,
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBName,
+		cfg.DBPort,
+		cfg.DBSSLMode,
 	)
 
-	var logLevel logger.LogLevel
-	if cfg.IsDev() {
-		logLevel = logger.Info
-	} else {
-		logLevel = logger.Silent
+	// Configure GORM logger
+	gormLogger := logger.Default.LogMode(logger.Info)
+	if cfg.Environment == "production" {
+		gormLogger = logger.Default.LogMode(logger.Error)
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logLevel),
+		Logger: gormLogger,
+		NowFunc: func() time.Time {
+			return time.Now().UTC()
+		},
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	// Configure connection pool
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get sql.DB: %w", err)
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
 
-	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
-	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
-	sqlDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(30)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	if err := sqlDB.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+	database := &Database{DB: db}
+
+	// Auto-migrate tables
+	if err := database.migrate(); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
-	log.Printf("Database connection established: %s:%s", cfg.Database.Host, cfg.Database.Port)
-	return db, nil
+	// Check if database is empty and run seeds if needed
+	if err := database.checkAndSeed(); err != nil {
+		log.Printf("⚠️  Warning: Failed to check/seed database: %v", err)
+		// Don't fail startup, just log the warning
+	}
+
+	log.Println("✅ Database connected and migrated successfully")
+	return database, nil
 }
 
-func RunMigrations(db *gorm.DB) error {
-	log.Println("Running database migrations...")
-	
-	// Add your models here to auto-migrate
-	// err := db.AutoMigrate(
-	//     &models.User{},
-	//     &models.Product{},
-	// )
-	// 
-	// if err != nil {
-	//     return fmt.Errorf("failed to run migrations: %w", err)
-	// }
+// migrate runs auto-migration for all entities
+func (d *Database) migrate() error {
+	return d.DB.AutoMigrate(
+		&entities.User{},
+		&entities.Enterprise{},
+		&entities.File{},
+		&entities.FileVariant{},
+		&entities.Menu{},
+		&entities.MenuCarousel{},
+		&entities.CarouselItem{},
+		&entities.CarouselTextOverlay{},
+		&entities.Tower{},
+		&entities.Floor{},
+		&entities.Suite{},
+		&entities.MenuFloorPlan{},
+		&entities.MenuPins{},
+		&entities.PinMarker{},
+		&entities.PinMarkerImage{},
+	)
+}
 
-	log.Println("Migrations completed successfully")
+// checkAndSeed verifica se o banco está vazio e executa seeds se necessário
+func (d *Database) checkAndSeed() error {
+	// Verifica se já existem dados críticos (enterprises e users)
+	var enterpriseCount, userCount int64
+	
+	if err := d.DB.Model(&entities.Enterprise{}).Count(&enterpriseCount).Error; err != nil {
+		return fmt.Errorf("failed to count enterprises: %w", err)
+	}
+	
+	if err := d.DB.Model(&entities.User{}).Count(&userCount).Error; err != nil {
+		return fmt.Errorf("failed to count users: %w", err)
+	}
+
+	// Se não há dados essenciais, executar seeding
+	if enterpriseCount == 0 && userCount == 0 {
+		log.Println("🌱 Database appears to be empty, running automatic seeding...")
+		
+		seeder := seeds.NewSeeder(d.DB)
+		if err := seeder.SeedAll(); err != nil {
+			return fmt.Errorf("failed to run automatic seeding: %w", err)
+		}
+		
+		log.Println("✅ Automatic database seeding completed successfully!")
+	} else {
+		log.Printf("📊 Database contains %d enterprises and %d users - skipping seeding", enterpriseCount, userCount)
+	}
+
 	return nil
 }
 
-func RunSeeds(db *gorm.DB) error {
-	log.Println("Running database seeds...")
-	
-	// Add your seed logic here
-	// Example:
-	// if err := seedUsers(db); err != nil {
-	//     return fmt.Errorf("failed to seed users: %w", err)
-	// }
-
-	log.Println("Seeds completed successfully")
-	return nil
-}
-
-func CloseConnection(db *gorm.DB) error {
-	sqlDB, err := db.DB()
+// Close closes the database connection
+func (d *Database) Close() error {
+	sqlDB, err := d.DB.DB()
 	if err != nil {
-		return fmt.Errorf("failed to get sql.DB: %w", err)
+		return err
 	}
-	
 	return sqlDB.Close()
+}
+
+// GetDB returns the GORM database instance
+func (d *Database) GetDB() *gorm.DB {
+	return d.DB
 }
